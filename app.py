@@ -1,79 +1,57 @@
 import streamlit as st
 import pandas as pd
 import os
-from datetime import datetime
 
-st.set_page_config(page_title="📂 IP Masterlist Dashboard", layout="wide")
+st.set_page_config(page_title="📚 IP Masterlist Dashboard", layout="wide")
+st.title("📂 Intellectual Property Dashboard")
 
-st.title("📂 IP Masterlist Dashboard")
-st.caption("Automatically loads Excel files from 2006–2025 with multiple sheets per IP Type")
+uploaded_files = st.file_uploader("📤 Upload Excel files (2006–2025)", type=["xlsx"], accept_multiple_files=True)
 
-# --- Load all Excel files in the 'data' folder ---
-data_folder = "data"
-excel_files = [f for f in os.listdir(data_folder) if f.endswith(".xlsx")]
+if uploaded_files:
+    df_list = []
+    for file in uploaded_files:
+        sheets = pd.read_excel(file, sheet_name=None, engine="openpyxl")
+        for sheet_name, data in sheets.items():
+            data["IP Type"] = sheet_name
+            df_list.append(data)
 
-if not excel_files:
-    st.warning("No Excel files found in the 'data' folder. Please upload some.")
-    st.stop()
+    df = pd.concat(df_list, ignore_index=True)
+    df.fillna('', inplace=True)
 
-# --- Read all Excel files and all sheets into one DataFrame ---
-df_list = []
-for file in excel_files:
-    file_path = os.path.join(data_folder, file)
-    xls = pd.read_excel(file_path, sheet_name=None, engine='openpyxl')
-    for sheet_name, sheet_df in xls.items():
-        sheet_df = sheet_df.copy()
-        sheet_df['IP Type'] = sheet_name  # Track which sheet this came from
-        sheet_df['Source File'] = file    # Track which file this came from
-        df_list.append(sheet_df)
+    # Fix date columns if they exist
+    for col in ['Date Applied', 'Date Approved']:
+        if col in df.columns:
+            df[col] = pd.to_datetime(df[col], errors='coerce')
 
-# Combine all, keeping all columns
-master_df = pd.concat(df_list, ignore_index=True, sort=False)
+    # Normalize Author column
+    if 'Author' in df.columns:
+        df['Author'] = df['Author'].astype(str).str.replace(';', ',').str.split(',')
+        df['Author'] = df['Author'].apply(lambda x: [a.strip() for a in x])
+        df = df.explode('Author').reset_index(drop=True)
 
-# Normalize Author column if it exists
-if 'Author' in master_df.columns:
-    master_df['Author'] = master_df['Author'].astype(str).str.replace(';', ',', regex=False)
-    master_df['Author'] = master_df['Author'].str.split(',').apply(lambda x: [a.strip() for a in x])
-    master_df = master_df.explode('Author').reset_index(drop=True)
+    # Sidebar filters
+    with st.sidebar:
+        st.header("🔎 Filter Data")
+        authors = st.multiselect("Filter by Author", options=sorted(df['Author'].unique()), default=None)
+        ip_types = st.multiselect("Filter by IP Type", options=sorted(df['IP Type'].unique()), default=None)
+        years = st.multiselect("Filter by Year (Date Applied)", options=sorted(df['Date Applied'].dt.year.dropna().unique()), default=None)
 
-# Try to coerce date columns
-for col in ['Date Applied', 'Date Approved']:
-    if col in master_df.columns:
-        master_df[col] = pd.to_datetime(master_df[col], errors='coerce')
+    filtered_df = df.copy()
 
-# --- Sidebar Filters ---
-st.sidebar.header("🔍 Filters")
+    if authors:
+        filtered_df = filtered_df[filtered_df['Author'].isin(authors)]
 
-# IP Type Filter
-ip_types = master_df['IP Type'].dropna().unique()
-selected_ip_types = st.sidebar.multiselect("Filter by IP Type", ip_types, default=list(ip_types))
-filtered_df = master_df[master_df['IP Type'].isin(selected_ip_types)]
+    if ip_types:
+        filtered_df = filtered_df[filtered_df['IP Type'].isin(ip_types)]
 
-# Author Filter
-if 'Author' in filtered_df.columns:
-    all_authors = filtered_df['Author'].dropna().unique()
-    selected_authors = st.sidebar.multiselect("Filter by Author", all_authors)
-    if selected_authors:
-        filtered_df = filtered_df[filtered_df['Author'].isin(selected_authors)]
+    if years and 'Date Applied' in filtered_df.columns:
+        filtered_df = filtered_df[filtered_df['Date Applied'].dt.year.isin(years)]
 
-# Date Range Filter
-if 'Date Applied' in filtered_df.columns:
-    min_date = filtered_df['Date Applied'].min()
-    max_date = filtered_df['Date Applied'].max()
-    start_date, end_date = st.sidebar.date_input("Date Applied Range", [min_date, max_date])
-    filtered_df = filtered_df[(filtered_df['Date Applied'] >= pd.to_datetime(start_date)) &
-                              (filtered_df['Date Applied'] <= pd.to_datetime(end_date))]
+    st.success(f"🎯 Showing {len(filtered_df)} results")
+    st.dataframe(filtered_df, use_container_width=True)
 
-# --- Display ---
-st.markdown(f"### Showing {len(filtered_df):,} records")
-st.dataframe(filtered_df, use_container_width=True)
+    csv = filtered_df.to_csv(index=False).encode('utf-8')
+    st.download_button("⬇️ Download Filtered Data", csv, "filtered_ip_data.csv", "text/csv")
 
-# --- Optional: Download Button ---
-st.download_button(
-    label="📥 Download Filtered Data as CSV",
-    data=filtered_df.to_csv(index=False).encode('utf-8'),
-    file_name=f"filtered_ip_data_{datetime.today().date()}.csv",
-    mime='text/csv'
-)
-
-st.caption("👩‍💻 Built with 💙 by Krisha's AI sidekick. All rights reserved, IP included.")
+else:
+    st.warning("📎 Please upload Excel files to begin.")
