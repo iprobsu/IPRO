@@ -6,13 +6,27 @@ from datetime import datetime
 # --- Page Config ---
 st.set_page_config(page_title="IP Masterlist Dashboard", layout="wide")
 
-# --- Logo and Header ---
-st.image("ipro_logo.png", width=100)
-st.markdown("<h1 style='color:#212529;'>📚 IP Masterlist Dashboard</h1>", unsafe_allow_html=True)
-
-# --- Styling ---
+# --- Roboto Font + Glow + Logo Animation ---
 st.markdown("""
+    <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;700&display=swap" rel="stylesheet">
     <style>
+        html, body, [class*="css"] {
+            font-family: 'Roboto', sans-serif;
+        }
+        .glow-logo {
+            width: 80px;
+            filter: drop-shadow(0 0 8px #00ffaa);
+            animation: bounce 2s infinite;
+        }
+        @keyframes bounce {
+            0%, 100% { transform: translateY(0); }
+            50% { transform: translateY(-10px); }
+        }
+        h1 {
+            text-align: center;
+            font-size: 2rem;
+            margin-top: 0.5rem;
+        }
         .stButton>button {
             background-color: #ffcc00;
             color: black;
@@ -26,8 +40,18 @@ st.markdown("""
         .stSelectbox>div>div {
             border-radius: 10px;
         }
-        .reportview-container .main footer {visibility: hidden;}
+        .reportview-container .main footer {
+            visibility: hidden;
+        }
     </style>
+""", unsafe_allow_html=True)
+
+# --- Logo + Title ---
+st.markdown("""
+    <div style="text-align: center;">
+        <img src="https://raw.githubusercontent.com/iprobsu/ip-dashboard/main/ipro-logo.png" alt="IPRO Logo" class="glow-logo" />
+        <h1>📚 IP Masterlist Dashboard</h1>
+    </div>
 """, unsafe_allow_html=True)
 
 # --- Load Data ---
