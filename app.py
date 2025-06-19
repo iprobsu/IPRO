@@ -116,36 +116,38 @@ if date_range:
         start, end = pd.to_datetime(date_range[0]), pd.to_datetime(date_range[1])
         filtered_df = filtered_df[filtered_df['Date Applied'].between(start, end)]
 
-# --- Display Results with Optional Color Highlighting (visible in main app) ---
+# --- Display Results with Color Picker Toggle Button ---
 if filtered_df.empty:
     st.warning("😕 No records matched your filters or search term.")
 else:
-    # Step 1: Remove columns with all blanks or NaNs
+    # Step 1: Remove columns that are completely empty or blank
     clean_df = filtered_df.dropna(axis=1, how='all')
     clean_df = clean_df.loc[:, ~(clean_df == '').all()]
 
     st.markdown(f"### 📄 Showing {len(clean_df)} result{'s' if len(clean_df) != 1 else ''}")
 
-    # Step 2: IP Type Row Highlighting (main app, not sidebar)
-    st.markdown("🎨 **Highlight Rows by IP Type**")
+    # Step 2: Button to toggle the color customization section
+    show_colors = st.button("🎨 Customize Row Colors")
 
-    enable_coloring = st.checkbox("Enable Row Coloring")
-
-    if enable_coloring and 'IP Type' in clean_df.columns:
-        color_map = {}
+    if show_colors and 'IP Type' in clean_df.columns:
         ip_types = sorted(clean_df['IP Type'].dropna().unique())
+        color_map = {}
 
+        st.markdown("**Select a color for each IP Type:**")
         color_cols = st.columns(len(ip_types))
+
         for i, ip in enumerate(ip_types):
             with color_cols[i]:
                 color_map[ip] = st.color_picker(f"{ip}", "#ffffff", key=f"color_{ip}")
 
+        # Apply row coloring
         def style_rows(row):
             bg = color_map.get(row['IP Type'], '#ffffff')
             return [f'background-color: {bg}'] * len(row)
 
         styled_df = clean_df.style.apply(style_rows, axis=1)
-        st.write(styled_df)
+
+        # Safely render the styled table using HTML
+        st.markdown(styled_df.to_html(escape=False), unsafe_allow_html=True)
     else:
         st.dataframe(clean_df, use_container_width=True, height=600)
-
