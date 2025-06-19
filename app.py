@@ -116,7 +116,7 @@ if date_range:
         start, end = pd.to_datetime(date_range[0]), pd.to_datetime(date_range[1])
         filtered_df = filtered_df[filtered_df['Date Applied'].between(start, end)]
 
-# --- Display Results with Pastel Color Dropdowns ---
+# --- Display Results with Optional Pastel Row Colors ---
 if filtered_df.empty:
     st.warning("😕 No records matched your filters or search term.")
 else:
@@ -125,12 +125,13 @@ else:
 
     st.markdown(f"### 📄 Showing {len(clean_df)} result{'s' if len(clean_df) != 1 else ''}")
 
+    # Customize button toggle
     show_colors = st.button("🎨 Customize Row Colors")
 
     if show_colors and 'IP Type' in clean_df.columns:
         ip_types = sorted(clean_df['IP Type'].dropna().unique())
 
-        # Simple pastel color name-to-hex map
+        # Predefined pastel palette
         pastel_colors = {
             "None": "#FFFFFF",
             "Peach": "#FFD8BE",
@@ -150,22 +151,21 @@ else:
 
         for i, ip in enumerate(ip_types):
             with columns[i]:
-                color_choice = st.selectbox(
+                color_name = st.selectbox(
                     f"{ip}",
                     options=list(pastel_colors.keys()),
                     index=0,
                     key=f"pastel_{ip}"
                 )
-                selected_colors[ip] = pastel_colors[color_choice]
+                selected_colors[ip] = pastel_colors[color_name]
 
+        # Row styling function
         def highlight(row):
             bg = selected_colors.get(row['IP Type'], "#FFFFFF")
             return [f'background-color: {bg}'] * len(row)
 
         styled_df = clean_df.style.apply(highlight, axis=1)
         st.markdown(styled_df.to_html(escape=False), unsafe_allow_html=True)
-    else:
-        st.dataframe(clean_df, use_container_width=True, height=600)
 
     else:
         st.dataframe(clean_df, use_container_width=True, height=600)
