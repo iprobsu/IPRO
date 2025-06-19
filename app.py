@@ -34,7 +34,7 @@ full_df = load_data()
 
 authors = sorted(full_df['Author'].dropna().unique()) if 'Author' in full_df else []
 ip_types = sorted(full_df['IP Type'].dropna().unique()) if 'IP Type' in full_df else []
-dates = pd.to_datetime(full_df['Date Applied'], errors='coerce') if 'Date Applied' in full_df else []
+dates = pd.to_datetime(full_df['Date Applied'], errors='coerce') if 'Date Applied' in full_df else pd.Series(dtype='datetime64[ns]')
 
 selected_author = st.sidebar.selectbox("Author", ["All"] + authors)
 selected_ip = st.sidebar.multiselect("IP Type", ip_types, default=ip_types)
