@@ -99,13 +99,13 @@ def load_data():
                 df["Source File"] = filename
                 all_data.append(df)
     df = pd.concat(all_data, ignore_index=True)
-    df['Date Applied'] = pd.to_datetime(df.get('Date Applied', pd.NaT), errors='coerce')
-    df['Date Approved'] = pd.to_datetime(df.get('Date Approved', pd.NaT), errors='coerce')
-    df.fillna('', inplace=True)
-    if 'Author' in df.columns:
-        df['Author'] = df['Author'].astype(str).str.replace(';', ',').str.split(',')
-        df['Author'] = df['Author'].apply(lambda x: [a.strip() for a in x])
-        df = df.explode('Author').reset_index(drop=True)
+    df["Date Applied"] = pd.to_datetime(df.get("Date Applied", pd.NaT), errors="coerce")
+    df["Date Approved"] = pd.to_datetime(df.get("Date Approved", pd.NaT), errors="coerce")
+    df.fillna("", inplace=True)
+    if "Author" in df.columns:
+        df["Author"] = df["Author"].astype(str).str.replace(";", ",").str.split(",")
+        df["Author"] = df["Author"].apply(lambda x: [a.strip() for a in x])
+        df = df.explode("Author").reset_index(drop=True)
     return df
 
 df = load_data()
