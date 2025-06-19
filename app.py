@@ -164,4 +164,5 @@ else:
         styled_df = non_empty_df.style
 
     st.markdown(f"### 📄 Showing {len(non_empty_df)} result{'s' if len(non_empty_df) != 1 else ''}")
-    st.dataframe(styled_df, use_container_width=True, height=600)
+    st.write(styled_df)
+
