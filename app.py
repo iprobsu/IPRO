@@ -1,120 +1,66 @@
 import streamlit as st
 import pandas as pd
 import os
+from datetime import datetime
 
-# --- Streamlit Page Settings ---
-st.set_page_config(page_title="IP Masterlist Dashboard", layout="wide")
-
-# --- Roboto Font, Logo Styling, and Bounce Animation ---
-st.markdown("""
-    <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;700&display=swap" rel="stylesheet">
-    <style>
-        html, body, [class*="css"] {
-            font-family: 'Roboto', sans-serif;
-        }
-        .glow-logo {
-            width: 80px;
-            filter: drop-shadow(0 0 8px #00ffaa);
-            animation: bounce 2s infinite;
-        }
-        @keyframes bounce {
-            0%, 100% { transform: translateY(0); }
-            50% { transform: translateY(-10px); }
-        }
-        h1 {
-            text-align: center;
-            font-size: 2rem;
-            margin-top: 0.5rem;
-        }
-    </style>
-""", unsafe_allow_html=True)
+st.set_page_config(page_title="IPRO Masterlist Dashboard", layout="wide")
 
 # --- Logo and Title ---
 st.markdown("""
     <div style="text-align: center;">
-        <img src="https://raw.githubusercontent.com/iprobsu/IPRO/main/ipro_logo.png" alt="IPRO Logo" class="glow-logo" />
+        <img src="https://raw.githubusercontent.com/iprobsu/IPRO/main/ipro_logo.png" alt="IPRO Logo" style="width: 100px; margin-bottom: 10px;" />
         <h1>📚 IP Masterlist Dashboard</h1>
     </div>
 """, unsafe_allow_html=True)
 
-# --- Load All Excel Data ---
-@st.cache_data
+# --- File Loader (Assumes Excel files named 2006.xlsx to 2025.xlsx with IP Type sheets) ---
 def load_data():
-    data_dir = "data"
-    all_data = []
-    for filename in os.listdir(data_dir):
-        if filename.endswith(".xlsx"):
-            year = filename[:4]
-            file_path = os.path.join(data_dir, filename)
-            xls = pd.read_excel(file_path, sheet_name=None, engine="openpyxl")
-            for sheet_name, df in xls.items():
-                df["Year"] = year
-                df["IP Type"] = sheet_name
-                df["Source File"] = filename
-                all_data.append(df)
-    df = pd.concat(all_data, ignore_index=True)
-    df['Date Applied'] = pd.to_datetime(df.get('Date Applied', pd.NaT), errors='coerce')
-    df['Date Approved'] = pd.to_datetime(df.get('Date Approved', pd.NaT), errors='coerce')
-    df.fillna('', inplace=True)
-    if 'Author' in df.columns:
-        df['Author'] = df['Author'].astype(str).str.replace(';', ',').str.split(',')
-        df['Author'] = df['Author'].apply(lambda x: [a.strip() for a in x])
-        df = df.explode('Author').reset_index(drop=True)
-    return df
+    dfs = []
+    for year in range(2006, 2026):
+        filename = f"{year}.xlsx"
+        if os.path.exists(filename):
+            xl = pd.ExcelFile(filename)
+            for sheet in xl.sheet_names:
+                df = xl.parse(sheet)
+                df['IP Type'] = sheet
+                df['Year'] = year
+                dfs.append(df)
+    return pd.concat(dfs, ignore_index=True) if dfs else pd.DataFrame()
 
-df = load_data()
+# Load data
+full_df = load_data()
 
-# --- Filter UI ---
-st.markdown("### 🔍 Search Intellectual Property Records")
+# --- Sidebar Filters ---
+st.sidebar.header("🔍 Filters")
+authors = sorted(full_df['Author'].dropna().unique()) if 'Author' in full_df else []
+ip_types = sorted(full_df['IP Type'].dropna().unique()) if 'IP Type' in full_df else []
+dates = pd.to_datetime(full_df['Date Applied'], errors='coerce') if 'Date Applied' in full_df else []
 
-col1, col2, col3 = st.columns([3, 2, 2])
+selected_author = st.sidebar.selectbox("Author", ["All"] + authors)
+selected_ip = st.sidebar.multiselect("IP Type", ip_types, default=ip_types)
 
-with col1:
-    search_term = st.text_input("Search by Author or Title")
+if not dates.empty:
+    min_date, max_date = dates.min(), dates.max()
+    start_date, end_date = st.sidebar.date_input("Date Range", [min_date, max_date])
+else:
+    start_date, end_date = None, None
 
-with col2:
-    ip_type = st.selectbox("Filter by IP Type", ["All"] + sorted(df['IP Type'].unique()))
+search_term = st.sidebar.text_input("🔎 Search", "")
 
-with col3:
-    year_filter = st.selectbox("Sort by Year", ["All"] + sorted(df['Year'].unique()))
+# --- Filter Logic ---
+filtered_df = full_df.copy()
 
-# --- Advanced Filters ---
-with st.expander("📂 Advanced Filters"):
-    col4, col5, col6 = st.columns(3)
-    with col4:
-        college = st.selectbox("Filter by College", ["All"] + sorted(df['College'].unique()) if 'College' in df else ["All"])
-    with col5:
-        campus = st.selectbox("Filter by Campus", ["All"] + sorted(df['Campus'].unique()) if 'Campus' in df else ["All"])
-    with col6:
-        date_range = st.date_input("Filter by Date Applied (optional)", [])
-
-# --- Apply Filters ---
-filtered_df = df.copy()
-
+if selected_author != "All":
+    filtered_df = filtered_df[filtered_df['Author'] == selected_author]
+if selected_ip:
+    filtered_df = filtered_df[filtered_df['IP Type'].isin(selected_ip)]
+if start_date and end_date and 'Date Applied' in filtered_df.columns:
+    filtered_df['Date Applied'] = pd.to_datetime(filtered_df['Date Applied'], errors='coerce')
+    filtered_df = filtered_df[(filtered_df['Date Applied'] >= pd.to_datetime(start_date)) &
+                              (filtered_df['Date Applied'] <= pd.to_datetime(end_date))]
 if search_term:
-    filtered_df = filtered_df[
-        filtered_df['Author'].astype(str).str.contains(search_term, case=False, na=False) |
-        filtered_df['Title'].astype(str).str.contains(search_term, case=False, na=False)
-    ]
-
-if ip_type != "All":
-    filtered_df = filtered_df[filtered_df['IP Type'] == ip_type]
-
-if year_filter != "All":
-    filtered_df = filtered_df[filtered_df['Year'] == year_filter]
-
-if 'College' in df.columns and college != "All":
-    filtered_df = filtered_df[filtered_df['College'] == college]
-
-if 'Campus' in df.columns and campus != "All":
-    filtered_df = filtered_df[filtered_df['Campus'] == campus]
-
-if date_range:
-    if len(date_range) == 1:
-        filtered_df = filtered_df[filtered_df['Date Applied'] >= pd.to_datetime(date_range[0])]
-    elif len(date_range) == 2:
-        start, end = pd.to_datetime(date_range[0]), pd.to_datetime(date_range[1])
-        filtered_df = filtered_df[filtered_df['Date Applied'].between(start, end)]
+    search_term = search_term.lower()
+    filtered_df = filtered_df[filtered_df.apply(lambda row: row.astype(str).str.lower().str.contains(search_term).any(), axis=1)]
 
 # --- Display Results with Optional Pastel Row Colors ---
 if filtered_df.empty:
@@ -125,24 +71,22 @@ else:
 
     st.markdown(f"### 📄 Showing {len(clean_df)} result{'s' if len(clean_df) != 1 else ''}")
 
-    # Customize button toggle
     show_colors = st.button("🎨 Customize Row Colors")
 
     if show_colors and 'IP Type' in clean_df.columns:
         ip_types = sorted(clean_df['IP Type'].dropna().unique())
 
-        # Predefined pastel palette
         pastel_colors = {
-            "None": "#FFFFFF",
-            "Peach": "#FFD8BE",
-            "Lavender": "#E6CCFF",
-            "Sky Blue": "#AEDFF7",
-            "Mint Green": "#B2F2BB",
-            "Pale Yellow": "#FFFACD",
-            "Soft Pink": "#FFCCE5",
-            "Lilac": "#D0B3FF",
-            "Powder Blue": "#B0E0E6",
-            "Light Gray": "#E8E8E8"
+            "": "#FFFFFF",
+            "🟧 Peach": "#FFD8BE",
+            "🟪 Lavender": "#E6CCFF",
+            "🟦 Sky Blue": "#AEDFF7",
+            "🟩 Mint Green": "#B2F2BB",
+            "🟨 Pale Yellow": "#FFFACD",
+            "🩷 Soft Pink": "#FFCCE5",
+            "🟣 Lilac": "#D0B3FF",
+            "🔷 Powder Blue": "#B0E0E6",
+            "⬜ Light Gray": "#E8E8E8"
         }
 
         st.markdown("**Select a pastel color for each IP Type:**")
@@ -151,15 +95,14 @@ else:
 
         for i, ip in enumerate(ip_types):
             with columns[i]:
-                color_name = st.selectbox(
+                choice = st.selectbox(
                     f"{ip}",
                     options=list(pastel_colors.keys()),
                     index=0,
                     key=f"pastel_{ip}"
                 )
-                selected_colors[ip] = pastel_colors[color_name]
+                selected_colors[ip] = pastel_colors[choice]
 
-        # Row styling function
         def highlight(row):
             bg = selected_colors.get(row['IP Type'], "#FFFFFF")
             return [f'background-color: {bg}'] * len(row)
