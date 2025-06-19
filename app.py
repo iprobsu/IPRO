@@ -137,9 +137,11 @@ if date_range:
 if filtered_df.empty:
     st.warning("😕 No records matched your filters or search term.")
 else:
-    grouped = filtered_df.groupby("IP Type")
-    for ip_type_name, group in grouped:
-        if not group.empty:
-            st.markdown(f"### 📄 {ip_type_name} ({len(group)} result{'s' if len(group) != 1 else ''})")
-            st.dataframe(group.reset_index(drop=True), use_container_width=True)
+    # Drop columns that are entirely empty
+    non_empty_df = filtered_df.dropna(axis=1, how='all')
 
+    # Also drop columns that are all blank strings (e.g., '')
+    non_empty_df = non_empty_df.loc[:, ~(non_empty_df == '').all()]
+
+    st.markdown(f"### 📄 Showing {len(non_empty_df)} result{'s' if len(non_empty_df) != 1 else ''}")
+    st.dataframe(non_empty_df.reset_index(drop=True), use_container_width=True, height=600)
