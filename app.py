@@ -29,6 +29,37 @@ st.markdown("""
     </style>
 """, unsafe_allow_html=True)
 
+# --- Dark Mode Toggle ---
+st.sidebar.markdown("### ⚙️ Appearance Settings")
+dark_mode = st.sidebar.toggle("🌙 Dark Mode", value=False)
+
+# --- Apply Custom Dark Mode Styles ---
+if dark_mode:
+    st.markdown("""
+        <style>
+            html, body, [class*="css"] {
+                background-color: #121212 !important;
+                color: #e0e0e0 !important;
+            }
+            .stTextInput > div > div > input,
+            .stSelectbox > div > div,
+            .stDateInput input {
+                background-color: #2c2c2c !important;
+                color: #e0e0e0 !important;
+            }
+            .stDataFrame, .stTable {
+                background-color: #1e1e1e !important;
+            }
+            .css-1aumxhk, .css-1dp5vir, .block-container {
+                background-color: #121212 !important;
+            }
+            .css-1avcm0n {
+                background-color: #2c2c2c !important;
+            }
+        </style>
+    """, unsafe_allow_html=True)
+
+
 # --- Logo and Title ---
 st.markdown("""
     <div style="text-align: center;">
