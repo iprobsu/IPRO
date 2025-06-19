@@ -6,10 +6,23 @@ import os
 st.set_page_config(page_title="IP Masterlist Dashboard", layout="wide")
 
 # --- Login (Password-Based) ---
+# --- Login (Password-Based) ---
 st.sidebar.markdown("### 🔐 Login")
+
 password = st.sidebar.text_input("Enter Admin Password", type="password")
-role = "Admin" if password == "admin123" else "Moderator"
-st.sidebar.markdown(f"**Logged in as:** {role}")
+role = None
+
+if password == "":
+    st.sidebar.info("🔑 Enter password to access Admin features.")
+    role = "Moderator"
+elif password == "admin123":
+    st.sidebar.success("🛠 Welcome, Admin! You can now upload new Excel files.")
+    role = "Admin"
+else:
+    st.sidebar.error("❌ Incorrect password. You are in Moderator (view-only) mode.")
+    role = "Moderator"
+
+st.sidebar.markdown(f"**🔒 Current Role:** {role}")
 
 # --- Dark Mode Toggle ---
 dark_mode = st.sidebar.toggle("🌗 Enable Dark Mode", value=False)
