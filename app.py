@@ -34,7 +34,7 @@ full_df = load_data()
 
 authors = sorted(full_df['Author'].dropna().unique()) if 'Author' in full_df else []
 ip_types = sorted(full_df['IP Type'].dropna().unique()) if 'IP Type' in full_df else []
-dates = pd.to_datetime(full_df['Date Applied'], errors='coerce') if 'Date Applied' in full_df else pd.Series(dtype='datetime64[ns]')
+dates = pd.to_datetime(full_df['Date Applied'], errors='coerce') if 'Date Applied' in full_df else []
 
 selected_author = st.sidebar.selectbox("Author", ["All"] + authors)
 selected_ip = st.sidebar.multiselect("IP Type", ip_types, default=ip_types)
@@ -46,33 +46,6 @@ else:
     start_date, end_date = None, None
 
 search_term = st.sidebar.text_input("🔎 Search", "")
-
-# --- Optional Row Color Customization ---
-show_colors = st.sidebar.checkbox("🎨 Customize Row Colors")
-selected_colors = {}
-
-if show_colors:
-    pastel_colors = {
-        "": "#FFFFFF",
-        "🟧 Peach": "#FFD8BE",
-        "🟪 Lavender": "#E6CCFF",
-        "🟦 Sky Blue": "#AEDFF7",
-        "🟩 Mint Green": "#B2F2BB",
-        "🟨 Pale Yellow": "#FFFACD",
-        "🩷 Soft Pink": "#FFCCE5",
-        "🟣 Lilac": "#D0B3FF",
-        "🔷 Powder Blue": "#B0E0E6",
-        "⬜ Light Gray": "#E8E8E8"
-    }
-    st.sidebar.markdown("**🎨 Pick a pastel color per IP Type:**")
-    for ip in ip_types:
-        choice = st.sidebar.selectbox(
-            f"{ip}",
-            options=list(pastel_colors.keys()),
-            index=0,
-            key=f"pastel_{ip}"
-        )
-        selected_colors[ip] = pastel_colors[choice]
 
 # --- Filter Logic ---
 filtered_df = full_df.copy()
@@ -89,7 +62,7 @@ if search_term:
     search_term = search_term.lower()
     filtered_df = filtered_df[filtered_df.apply(lambda row: row.astype(str).str.lower().str.contains(search_term).any(), axis=1)]
 
-# --- Display Results ---
+# --- Display Results with Optional Pastel Row Colors ---
 if filtered_df.empty:
     st.warning("😕 No records matched your filters or search term.")
 else:
@@ -98,12 +71,42 @@ else:
 
     st.markdown(f"### 📄 Showing {len(clean_df)} result{'s' if len(clean_df) != 1 else ''}")
 
+    show_colors = st.sidebar.checkbox("🎨 Customize Row Colors")
+
     if show_colors and 'IP Type' in clean_df.columns:
+        ip_types = sorted(clean_df['IP Type'].dropna().unique())
+
+        pastel_colors = {
+            "": "#FFFFFF",
+            "🟧 Peach": "#FFD8BE",
+            "🟪 Lavender": "#E6CCFF",
+            "🟦 Sky Blue": "#AEDFF7",
+            "🟩 Mint Green": "#B2F2BB",
+            "🟨 Pale Yellow": "#FFFACD",
+            "🩷 Soft Pink": "#FFCCE5",
+            "🟣 Lilac": "#D0B3FF",
+            "🔷 Powder Blue": "#B0E0E6",
+            "⬜ Light Gray": "#E8E8E8"
+        }
+
+        st.sidebar.markdown("**Select a pastel color for each IP Type:**")
+        selected_colors = {}
+
+        for ip in ip_types:
+            choice = st.sidebar.selectbox(
+                f"{ip}",
+                options=list(pastel_colors.keys()),
+                index=0,
+                key=f"pastel_{ip}"
+            )
+            selected_colors[ip] = pastel_colors[choice]
+
         def highlight(row):
             bg = selected_colors.get(row['IP Type'], "#FFFFFF")
             return [f'background-color: {bg}'] * len(row)
 
         styled_df = clean_df.style.apply(highlight, axis=1)
         st.markdown(styled_df.to_html(escape=False), unsafe_allow_html=True)
+
     else:
         st.dataframe(clean_df, use_container_width=True, height=600)
