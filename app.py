@@ -107,31 +107,28 @@ if date_range:
         start, end = pd.to_datetime(date_range[0]), pd.to_datetime(date_range[1])
         filtered_df = filtered_df[filtered_df['Date Applied'].between(start, end)]
 
-# --- Display Results (with optional color customization button) ---
+# --- Sidebar: IP Type Row Coloring Options ---
+st.sidebar.markdown("🎨 **Customize Row Colors by IP Type**")
+enable_coloring = st.sidebar.checkbox("Enable Row Coloring")
+
+ip_color_map = {}
+if enable_coloring and 'IP Type' in filtered_df.columns:
+    ip_types = sorted(filtered_df['IP Type'].dropna().unique())
+    for ip in ip_types:
+        ip_color_map[ip] = st.sidebar.color_picker(f"{ip}", "#ffffff", key=f"color_{ip}")
+
+# --- Display Results ---
 if filtered_df.empty:
     st.warning("😕 No records matched your filters or search term.")
 else:
-    # Clean up columns with all blanks
     display_df = filtered_df.dropna(axis=1, how='all')
     display_df = display_df.loc[:, ~(display_df == '').all()]
 
     st.markdown(f"### 📄 Showing {len(display_df)} result{'s' if len(display_df) != 1 else ''}")
 
-    # Row color customizer via button
-    show_colors = st.button("🎨 Customize Row Colors by IP Type")
-
-    if show_colors and 'IP Type' in display_df.columns:
-        st.markdown("#### 🎯 Select Colors for Each IP Type")
-        ip_types = sorted(display_df['IP Type'].dropna().unique())
-        color_map = {}
-        color_cols = st.columns(min(4, len(ip_types)))
-
-        for i, ip in enumerate(ip_types):
-            with color_cols[i % len(color_cols)]:
-                color_map[ip] = st.color_picker(f"{ip}", "#ffffff", key=f"color_{ip}")
-
+    if enable_coloring and ip_color_map:
         def apply_color(row):
-            bg = color_map.get(row['IP Type'], '#ffffff')
+            bg = ip_color_map.get(row['IP Type'], '#ffffff')
             return [f'background-color: {bg}'] * len(row)
 
         styled_df = display_df.style.apply(apply_color, axis=1)
