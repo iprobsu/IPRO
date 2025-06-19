@@ -107,7 +107,7 @@ if date_range:
         start, end = pd.to_datetime(date_range[0]), pd.to_datetime(date_range[1])
         filtered_df = filtered_df[filtered_df['Date Applied'].between(start, end)]
 
-# --- Sidebar: IP Type Row Coloring Options ---
+# --- Sidebar: Row Highlight Colors ---
 st.sidebar.markdown("🎨 **Customize Row Colors by IP Type**")
 enable_coloring = st.sidebar.checkbox("Enable Row Coloring")
 
@@ -115,7 +115,8 @@ ip_color_map = {}
 if enable_coloring and 'IP Type' in filtered_df.columns:
     ip_types = sorted(filtered_df['IP Type'].dropna().unique())
     for ip in ip_types:
-        ip_color_map[ip] = st.sidebar.color_picker(f"{ip}", "#ffffff", key=f"color_{ip}")
+        ip_color_map[ip] = st.sidebar.color_picker("", "#ffffff", key=f"color_{ip}")
+        st.sidebar.markdown(f"<div style='margin-top:-25px; margin-bottom:10px;'>{ip}</div>", unsafe_allow_html=True)
 
 # --- Display Results ---
 if filtered_df.empty:
