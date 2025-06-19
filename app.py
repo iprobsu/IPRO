@@ -116,7 +116,7 @@ if date_range:
         start, end = pd.to_datetime(date_range[0]), pd.to_datetime(date_range[1])
         filtered_df = filtered_df[filtered_df['Date Applied'].between(start, end)]
 
-# --- Display Results with Optional Color Highlighting ---
+# --- Display Results with Optional Color Highlighting (visible in main app) ---
 if filtered_df.empty:
     st.warning("😕 No records matched your filters or search term.")
 else:
@@ -124,25 +124,28 @@ else:
     clean_df = filtered_df.dropna(axis=1, how='all')
     clean_df = clean_df.loc[:, ~(clean_df == '').all()]
 
-    # Step 2: Sidebar toggle for coloring
-    st.sidebar.markdown("🎨 Customize Row Highlighting by IP Type")
-    enable_coloring = st.sidebar.checkbox("Enable Row Coloring")
+    st.markdown(f"### 📄 Showing {len(clean_df)} result{'s' if len(clean_df) != 1 else ''}")
+
+    # Step 2: IP Type Row Highlighting (main app, not sidebar)
+    st.markdown("🎨 **Highlight Rows by IP Type**")
+
+    enable_coloring = st.checkbox("Enable Row Coloring")
 
     if enable_coloring and 'IP Type' in clean_df.columns:
-        ip_types = sorted(clean_df['IP Type'].dropna().unique())
         color_map = {}
+        ip_types = sorted(clean_df['IP Type'].dropna().unique())
 
-        for ip in ip_types:
-            color = st.sidebar.color_picker(f"{ip}", "#ffffff")
-            color_map[ip] = color
+        color_cols = st.columns(len(ip_types))
+        for i, ip in enumerate(ip_types):
+            with color_cols[i]:
+                color_map[ip] = st.color_picker(f"{ip}", "#ffffff", key=f"color_{ip}")
 
         def style_rows(row):
             bg = color_map.get(row['IP Type'], '#ffffff')
             return [f'background-color: {bg}'] * len(row)
 
         styled_df = clean_df.style.apply(style_rows, axis=1)
-        st.markdown(f"### 📄 Showing {len(clean_df)} result{'s' if len(clean_df) != 1 else ''}")
-        st.write(styled_df)  # This is critical for styling to show
+        st.write(styled_df)
     else:
-        st.markdown(f"### 📄 Showing {len(clean_df)} result{'s' if len(clean_df) != 1 else ''}")
         st.dataframe(clean_df, use_container_width=True, height=600)
+
