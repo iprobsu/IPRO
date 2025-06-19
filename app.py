@@ -116,7 +116,7 @@ if date_range:
         start, end = pd.to_datetime(date_range[0]), pd.to_datetime(date_range[1])
         filtered_df = filtered_df[filtered_df['Date Applied'].between(start, end)]
 
-# --- Display Results with Pastel Color Picker via Dropdown ---
+# --- Display Results with Pastel Color Dropdowns ---
 if filtered_df.empty:
     st.warning("😕 No records matched your filters or search term.")
 else:
@@ -125,44 +125,47 @@ else:
 
     st.markdown(f"### 📄 Showing {len(clean_df)} result{'s' if len(clean_df) != 1 else ''}")
 
-    # Button to reveal color settings
     show_colors = st.button("🎨 Customize Row Colors")
 
     if show_colors and 'IP Type' in clean_df.columns:
         ip_types = sorted(clean_df['IP Type'].dropna().unique())
 
-        # Predefined pastel palette
-        pastel_palette = {
+        # Simple pastel color name-to-hex map
+        pastel_colors = {
+            "None": "#FFFFFF",
+            "Peach": "#FFD8BE",
+            "Lavender": "#E6CCFF",
             "Sky Blue": "#AEDFF7",
             "Mint Green": "#B2F2BB",
-            "Lavender": "#E6CCFF",
-            "Peach": "#FFD8BE",
             "Pale Yellow": "#FFFACD",
             "Soft Pink": "#FFCCE5",
-            "Light Gray": "#E8E8E8",
-            "None": "#FFFFFF"
+            "Lilac": "#D0B3FF",
+            "Powder Blue": "#B0E0E6",
+            "Light Gray": "#E8E8E8"
         }
 
         st.markdown("**Select a pastel color for each IP Type:**")
-        color_cols = st.columns(len(ip_types))
-
         selected_colors = {}
+        columns = st.columns(len(ip_types))
+
         for i, ip in enumerate(ip_types):
-            with color_cols[i]:
-                color_name = st.selectbox(
+            with columns[i]:
+                color_choice = st.selectbox(
                     f"{ip}",
-                    options=list(pastel_palette.keys()),
-                    index=len(pastel_palette) - 1,
+                    options=list(pastel_colors.keys()),
+                    index=0,
                     key=f"pastel_{ip}"
                 )
-                selected_colors[ip] = pastel_palette[color_name]
+                selected_colors[ip] = pastel_colors[color_choice]
 
-        # Apply color style to rows
-        def style_rows(row):
-            bg = selected_colors.get(row['IP Type'], '#FFFFFF')
+        def highlight(row):
+            bg = selected_colors.get(row['IP Type'], "#FFFFFF")
             return [f'background-color: {bg}'] * len(row)
 
-        styled_df = clean_df.style.apply(style_rows, axis=1)
+        styled_df = clean_df.style.apply(highlight, axis=1)
         st.markdown(styled_df.to_html(escape=False), unsafe_allow_html=True)
+    else:
+        st.dataframe(clean_df, use_container_width=True, height=600)
+
     else:
         st.dataframe(clean_df, use_container_width=True, height=600)
