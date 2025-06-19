@@ -1,102 +1,114 @@
 import streamlit as st
 import pandas as pd
 import os
-import datetime
+from datetime import datetime
 
-# Folder where Excel files are stored
-data_folder = "data"
+# --- Page Config ---
+st.set_page_config(page_title="IP Masterlist Dashboard", layout="wide")
 
-st.set_page_config(page_title="📂 IP Masterlist Dashboard", layout="wide")
-st.title("📂 IP Masterlist Dashboard")
+# --- Logo and Header ---
+st.image("ipro_logo.png", width=100)
+st.markdown("<h1 style='color:#212529;'>📚 IP Masterlist Dashboard</h1>", unsafe_allow_html=True)
 
-# Initialize a container to store the original columns for each IP type
-ip_columns = {}
+# --- Styling ---
+st.markdown("""
+    <style>
+        .stButton>button {
+            background-color: #ffcc00;
+            color: black;
+            border-radius: 8px;
+            padding: 0.5em 1em;
+        }
+        .stTextInput>div>div>input {
+            border-radius: 10px;
+            height: 40px;
+        }
+        .stSelectbox>div>div {
+            border-radius: 10px;
+        }
+        .reportview-container .main footer {visibility: hidden;}
+    </style>
+""", unsafe_allow_html=True)
 
-# Load all Excel files from the data folder
-@st.cache_data(show_spinner=True)
+# --- Load Data ---
+@st.cache_data
 def load_data():
-    df_list = []
-    for filename in os.listdir(data_folder):
-        if filename.endswith(".xlsx") and filename[:4].isdigit():
+    data_dir = "data"
+    all_data = []
+    for filename in os.listdir(data_dir):
+        if filename.endswith(".xlsx"):
+            file_path = os.path.join(data_dir, filename)
             year = filename[:4]
-            file_path = os.path.join(data_folder, filename)
             xls = pd.read_excel(file_path, sheet_name=None, engine="openpyxl")
-            for sheet_name, sheet_df in xls.items():
-                sheet_df = sheet_df.copy()
-                sheet_df['IP Type'] = sheet_name
-                sheet_df['Year'] = year
-
-                # Normalize date columns if they exist
-                for col in ['Date Applied', 'Date Approved']:
-                    if col in sheet_df.columns:
-                        sheet_df[col] = pd.to_datetime(sheet_df[col], errors='coerce')
-
-                # Track original columns per IP type
-                if sheet_name not in ip_columns:
-                    ip_columns[sheet_name] = sheet_df.columns.tolist()
-
-                df_list.append(sheet_df)
-
-    return pd.concat(df_list, ignore_index=True)
+            for sheet_name, df in xls.items():
+                df["Year"] = year
+                df["IP Type"] = sheet_name
+                df["Source File"] = filename
+                all_data.append(df)
+    df = pd.concat(all_data, ignore_index=True)
+    df['Date Applied'] = pd.to_datetime(df.get('Date Applied', pd.NaT), errors='coerce')
+    df['Date Approved'] = pd.to_datetime(df.get('Date Approved', pd.NaT), errors='coerce')
+    df.fillna('', inplace=True)
+    if 'Author' in df.columns:
+        df['Author'] = df['Author'].astype(str).str.replace(';', ',').str.split(',')
+        df['Author'] = df['Author'].apply(lambda x: [a.strip() for a in x])
+        df = df.explode('Author').reset_index(drop=True)
+    return df
 
 df = load_data()
 
-# Sidebar filters
-with st.sidebar:
-    st.header("🔍 Search & Filters")
+# --- Search and Filter ---
+st.markdown("### 🔍 Search Intellectual Property Records")
 
-    # Filter: IP Type
-    ip_types = df['IP Type'].dropna().unique().tolist()
-    selected_ip = st.selectbox("Filter by IP Type", ["All"] + ip_types)
+col1, col2, col3 = st.columns([3, 2, 2])
 
-    # Filter: Search column
-    search_column = st.selectbox("Search by", ["Title", "Author"])
-    keyword = st.text_input("Search keyword (optional)")
+with col1:
+    search_term = st.text_input("Search by Author or Title")
 
-    # Filter: Date Applied
-    st.markdown("#### 📅 Filter by Date Applied")
-    start_date = st.date_input("Start Date", value=None)
-    end_date = st.date_input("End Date", value=None)
+with col2:
+    ip_type = st.selectbox("Filter by IP Type", ["All"] + sorted(df['IP Type'].unique()))
 
-    # Auto-detect categorical filters
-    st.markdown("#### 🧠 Advanced Filters")
-    cat_cols = df.select_dtypes(include=['object']).nunique()
-    categorical_filters = cat_cols[cat_cols.between(2, 100)].index.tolist()
+with col3:
+    year_filter = st.selectbox("Sort by Year", ["All"] + sorted(df['Year'].unique()))
 
-    extra_filters = {}
-    for col in categorical_filters:
-        if col not in ['Title', 'Author', 'IP Type']:  # skip search columns
-            options = df[col].dropna().unique().tolist()
-            if len(options) > 1:
-                selected = st.multiselect(f"{col}", options)
-                if selected:
-                    extra_filters[col] = selected
+# --- Advanced Filters ---
+with st.expander("📂 Advanced Filters"):
+    col4, col5, col6 = st.columns(3)
+    with col4:
+        college = st.selectbox("Filter by College", ["All"] + sorted(df['College'].unique()) if 'College' in df else ["All"])
+    with col5:
+        campus = st.selectbox("Filter by Campus", ["All"] + sorted(df['Campus'].unique()) if 'Campus' in df else ["All"])
+    with col6:
+        date_range = st.date_input("Filter by Date Applied (optional)", [])
 
-# Apply filters to the DataFrame
+# --- Apply Filters ---
 filtered_df = df.copy()
 
-if selected_ip != "All":
-    filtered_df = filtered_df[filtered_df['IP Type'] == selected_ip]
+if search_term:
+    filtered_df = filtered_df[
+        filtered_df['Author'].astype(str).str.contains(search_term, case=False, na=False) |
+        filtered_df['Title'].astype(str).str.contains(search_term, case=False, na=False)
+    ]
 
-if keyword:
-    filtered_df = filtered_df[filtered_df[search_column].astype(str).str.contains(keyword, case=False, na=False)]
+if ip_type != "All":
+    filtered_df = filtered_df[filtered_df['IP Type'] == ip_type]
 
-if start_date:
-    filtered_df = filtered_df[filtered_df['Date Applied'] >= pd.to_datetime(start_date)]
+if year_filter != "All":
+    filtered_df = filtered_df[filtered_df['Year'] == year_filter]
 
-if end_date:
-    filtered_df = filtered_df[filtered_df['Date Applied'] <= pd.to_datetime(end_date)]
+if 'College' in df.columns and college != "All":
+    filtered_df = filtered_df[filtered_df['College'] == college]
 
-for col, selected_values in extra_filters.items():
-    filtered_df = filtered_df[filtered_df[col].isin(selected_values)]
+if 'Campus' in df.columns and campus != "All":
+    filtered_df = filtered_df[filtered_df['Campus'] == campus]
 
-# Show filtered results (only original columns per IP Type)
-st.subheader(f"Showing {len(filtered_df)} records")
-if selected_ip != "All":
-    display_columns = ip_columns.get(selected_ip, filtered_df.columns.tolist())
-    st.dataframe(filtered_df[display_columns])
-else:
-    st.dataframe(filtered_df)
+if date_range:
+    if len(date_range) == 1:
+        filtered_df = filtered_df[filtered_df['Date Applied'] >= pd.to_datetime(date_range[0])]
+    elif len(date_range) == 2:
+        start, end = pd.to_datetime(date_range[0]), pd.to_datetime(date_range[1])
+        filtered_df = filtered_df[filtered_df['Date Applied'].between(start, end)]
 
-# Optional: Export
-st.download_button("⬇️ Download Filtered Data as CSV", filtered_df.to_csv(index=False).encode('utf-8'), "filtered_data.csv", "text/csv")
+# --- Display Results ---
+st.markdown(f"### 📄 Showing {len(filtered_df)} results")
+st.dataframe(filtered_df, use_container_width=True, height=600)
