@@ -5,17 +5,15 @@ from datetime import datetime
 
 st.set_page_config(page_title="IPRO Masterlist Dashboard", layout="wide")
 
-# --- Logo and Title in Sidebar ---
-st.sidebar.markdown("""
+# --- Logo and Title ---
+st.markdown("""
     <div style="text-align: center;">
-        <img src="https://raw.githubusercontent.com/iprobsu/IPRO/main/ipro_logo.png" alt="IPRO Logo" style="width: 60px; margin-bottom: 10px;" />
-        <h3 style='text-align:center;'>📚 IP Dashboard</h3>
+        <img src="https://raw.githubusercontent.com/iprobsu/IPRO/main/ipro_logo.png" alt="IPRO Logo" style="width: 100px; margin-bottom: 10px;" />
+        <h1>📚 IP Masterlist Dashboard</h1>
     </div>
 """, unsafe_allow_html=True)
 
-# --- Sidebar Filters ---
-st.sidebar.header("🔍 Filters")
-
+# --- File Loader (Assumes Excel files named 2006.xlsx to 2025.xlsx with IP Type sheets) ---
 def load_data():
     dfs = []
     for year in range(2006, 2026):
@@ -32,6 +30,8 @@ def load_data():
 # Load data
 full_df = load_data()
 
+# --- Sidebar Filters ---
+st.sidebar.header("🔍 Filters")
 authors = sorted(full_df['Author'].dropna().unique()) if 'Author' in full_df else []
 ip_types = sorted(full_df['IP Type'].dropna().unique()) if 'IP Type' in full_df else []
 dates = pd.to_datetime(full_df['Date Applied'], errors='coerce') if 'Date Applied' in full_df else []
@@ -71,7 +71,7 @@ else:
 
     st.markdown(f"### 📄 Showing {len(clean_df)} result{'s' if len(clean_df) != 1 else ''}")
 
-    show_colors = st.sidebar.checkbox("🎨 Customize Row Colors")
+    show_colors = st.button("🎨 Customize Row Colors")
 
     if show_colors and 'IP Type' in clean_df.columns:
         ip_types = sorted(clean_df['IP Type'].dropna().unique())
@@ -89,17 +89,19 @@ else:
             "⬜ Light Gray": "#E8E8E8"
         }
 
-        st.sidebar.markdown("**Select a pastel color for each IP Type:**")
+        st.markdown("**Select a pastel color for each IP Type:**")
         selected_colors = {}
+        columns = st.columns(len(ip_types))
 
-        for ip in ip_types:
-            choice = st.sidebar.selectbox(
-                f"{ip}",
-                options=list(pastel_colors.keys()),
-                index=0,
-                key=f"pastel_{ip}"
-            )
-            selected_colors[ip] = pastel_colors[choice]
+        for i, ip in enumerate(ip_types):
+            with columns[i]:
+                choice = st.selectbox(
+                    f"{ip}",
+                    options=list(pastel_colors.keys()),
+                    index=0,
+                    key=f"pastel_{ip}"
+                )
+                selected_colors[ip] = pastel_colors[choice]
 
         def highlight(row):
             bg = selected_colors.get(row['IP Type'], "#FFFFFF")
