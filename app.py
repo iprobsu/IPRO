@@ -137,11 +137,31 @@ if date_range:
 if filtered_df.empty:
     st.warning("😕 No records matched your filters or search term.")
 else:
-    # Drop columns that are entirely empty
+    # --- Remove all-empty columns ---
     non_empty_df = filtered_df.dropna(axis=1, how='all')
-
-    # Also drop columns that are all blank strings (e.g., '')
     non_empty_df = non_empty_df.loc[:, ~(non_empty_df == '').all()]
 
+    # --- Sidebar Color Picker per IP Type ---
+    st.sidebar.markdown("🎨 Customize Row Colors by IP Type")
+
+    enable_coloring = st.sidebar.checkbox("Enable IP Type Coloring")
+
+    color_map = {}
+    unique_types = sorted(non_empty_df['IP Type'].dropna().unique())
+
+    if enable_coloring:
+        for ip_type in unique_types:
+            default = "#ffffff"  # default white
+            picked_color = st.sidebar.color_picker(f"{ip_type} color", value=default)
+            color_map[ip_type] = picked_color
+
+        def style_iptype(row):
+            color = color_map.get(row['IP Type'], '#ffffff')
+            return [f'background-color: {color}'] * len(row)
+
+        styled_df = non_empty_df.style.apply(style_iptype, axis=1)
+    else:
+        styled_df = non_empty_df.style
+
     st.markdown(f"### 📄 Showing {len(non_empty_df)} result{'s' if len(non_empty_df) != 1 else ''}")
-    st.dataframe(non_empty_df.reset_index(drop=True), use_container_width=True, height=600)
+    st.dataframe(styled_df, use_container_width=True, height=600)
