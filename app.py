@@ -1,12 +1,11 @@
 import streamlit as st
 import pandas as pd
 import os
-from datetime import datetime
 
-# --- Page Config ---
+# --- Streamlit Page Settings ---
 st.set_page_config(page_title="IP Masterlist Dashboard", layout="wide")
 
-# --- Roboto Font + Glow + Logo Animation ---
+# --- Roboto Font, Logo Styling, and Bounce Animation ---
 st.markdown("""
     <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;700&display=swap" rel="stylesheet">
     <style>
@@ -27,26 +26,10 @@ st.markdown("""
             font-size: 2rem;
             margin-top: 0.5rem;
         }
-        .stButton>button {
-            background-color: #ffcc00;
-            color: black;
-            border-radius: 8px;
-            padding: 0.5em 1em;
-        }
-        .stTextInput>div>div>input {
-            border-radius: 10px;
-            height: 40px;
-        }
-        .stSelectbox>div>div {
-            border-radius: 10px;
-        }
-        .reportview-container .main footer {
-            visibility: hidden;
-        }
     </style>
 """, unsafe_allow_html=True)
 
-# --- Logo + Title ---
+# --- Logo and Title ---
 st.markdown("""
     <div style="text-align: center;">
         <img src="https://raw.githubusercontent.com/iprobsu/ip-dashboard/main/ipro-logo.png" alt="IPRO Logo" class="glow-logo" />
@@ -54,15 +37,15 @@ st.markdown("""
     </div>
 """, unsafe_allow_html=True)
 
-# --- Load Data ---
+# --- Load All Excel Data ---
 @st.cache_data
 def load_data():
     data_dir = "data"
     all_data = []
     for filename in os.listdir(data_dir):
         if filename.endswith(".xlsx"):
-            file_path = os.path.join(data_dir, filename)
             year = filename[:4]
+            file_path = os.path.join(data_dir, filename)
             xls = pd.read_excel(file_path, sheet_name=None, engine="openpyxl")
             for sheet_name, df in xls.items():
                 df["Year"] = year
@@ -81,7 +64,7 @@ def load_data():
 
 df = load_data()
 
-# --- Search and Filter ---
+# --- Filter UI ---
 st.markdown("### 🔍 Search Intellectual Property Records")
 
 col1, col2, col3 = st.columns([3, 2, 2])
@@ -133,17 +116,16 @@ if date_range:
         start, end = pd.to_datetime(date_range[0]), pd.to_datetime(date_range[1])
         filtered_df = filtered_df[filtered_df['Date Applied'].between(start, end)]
 
-# --- Display Results ---
+# --- Display Results with Dynamic Columns and Coloring ---
 if filtered_df.empty:
     st.warning("😕 No records matched your filters or search term.")
 else:
-    # --- Remove all-empty columns ---
+    # Remove columns that are all blank
     non_empty_df = filtered_df.dropna(axis=1, how='all')
     non_empty_df = non_empty_df.loc[:, ~(non_empty_df == '').all()]
 
-    # --- Sidebar Color Picker per IP Type ---
+    # Sidebar color picker toggle
     st.sidebar.markdown("🎨 Customize Row Colors by IP Type")
-
     enable_coloring = st.sidebar.checkbox("Enable IP Type Coloring")
 
     color_map = {}
@@ -151,18 +133,17 @@ else:
 
     if enable_coloring:
         for ip_type in unique_types:
-            default = "#ffffff"  # default white
+            default = "#ffffff"  # default background color
             picked_color = st.sidebar.color_picker(f"{ip_type} color", value=default)
             color_map[ip_type] = picked_color
 
-        def style_iptype(row):
+        def style_rows(row):
             color = color_map.get(row['IP Type'], '#ffffff')
             return [f'background-color: {color}'] * len(row)
 
-        styled_df = non_empty_df.style.apply(style_iptype, axis=1)
+        styled_df = non_empty_df.style.apply(style_rows, axis=1)
+        st.markdown(f"### 📄 Showing {len(non_empty_df)} results")
+        st.write(styled_df)
     else:
-        styled_df = non_empty_df.style
-
-    st.markdown(f"### 📄 Showing {len(non_empty_df)} result{'s' if len(non_empty_df) != 1 else ''}")
-    st.write(styled_df)
-
+        st.markdown(f"### 📄 Showing {len(non_empty_df)} results")
+        st.dataframe(non_empty_df, use_container_width=True, height=600)
