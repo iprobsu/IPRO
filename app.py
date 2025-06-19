@@ -5,8 +5,13 @@ import os
 # --- Page Setup ---
 st.set_page_config(page_title="IP Masterlist Dashboard", layout="wide")
 
+# --- Login (Password-Based) ---
+st.sidebar.markdown("### 🔐 Login")
+password = st.sidebar.text_input("Enter Admin Password", type="password")
+role = "Admin" if password == "admin123" else "Moderator"
+st.sidebar.markdown(f"**Logged in as:** {role}")
+
 # --- Dark Mode Toggle ---
-st.sidebar.markdown("### ⚙️ Appearance Settings")
 dark_mode = st.sidebar.toggle("🌗 Enable Dark Mode", value=False)
 
 # --- Apply Dark Mode Styling ---
@@ -18,33 +23,27 @@ if dark_mode:
                 color: #e0e0e0 !important;
                 font-family: 'Roboto', sans-serif;
             }
-
             .stTextInput input, .stSelectbox div, .stDateInput input, .stMultiSelect div {
                 background-color: #2c2c2c !important;
                 color: #ffffff !important;
                 border: none !important;
             }
-
             .stDataFrame, .stTable {
                 background-color: #1e1e1e !important;
                 color: #ffffff !important;
             }
-
             .block-container, .sidebar-content, .css-1avcm0n, .css-1d391kg {
                 background-color: #121212 !important;
                 color: #ffffff !important;
             }
-
             h1, h2, h3, h4, h5, h6 {
                 color: #ffffff !important;
             }
-
             .stButton>button {
                 background-color: #333333 !important;
                 color: #ffffff !important;
                 border: none !important;
             }
-
             .glow-logo {
                 filter: drop-shadow(0 0 10px #00ffaa);
             }
@@ -83,8 +82,7 @@ st.markdown("""
     </div>
 """, unsafe_allow_html=True)
 
-# --- Load All Excel Files ---
-@st.cache_data
+# --- Load Data ---
 def load_data():
     data_dir = "data"
     all_data = []
@@ -99,16 +97,25 @@ def load_data():
                 df["Source File"] = filename
                 all_data.append(df)
     df = pd.concat(all_data, ignore_index=True)
-    df["Date Applied"] = pd.to_datetime(df.get("Date Applied", pd.NaT), errors="coerce")
-    df["Date Approved"] = pd.to_datetime(df.get("Date Approved", pd.NaT), errors="coerce")
-    df.fillna("", inplace=True)
-    if "Author" in df.columns:
-        df["Author"] = df["Author"].astype(str).str.replace(";", ",").str.split(",")
-        df["Author"] = df["Author"].apply(lambda x: [a.strip() for a in x])
-        df = df.explode("Author").reset_index(drop=True)
+    df['Date Applied'] = pd.to_datetime(df.get('Date Applied', pd.NaT), errors='coerce')
+    df['Date Approved'] = pd.to_datetime(df.get('Date Approved', pd.NaT), errors='coerce')
+    df.fillna('', inplace=True)
+    if 'Author' in df.columns:
+        df['Author'] = df['Author'].astype(str).str.replace(';', ',').str.split(',')
+        df['Author'] = df['Author'].apply(lambda x: [a.strip() for a in x])
+        df = df.explode('Author').reset_index(drop=True)
     return df
 
 df = load_data()
+
+# --- Admin: Upload new data ---
+if role == "Admin":
+    st.sidebar.markdown("### 📤 Upload New Excel File")
+    uploaded_file = st.sidebar.file_uploader("Upload Excel", type=["xlsx"])
+    if uploaded_file:
+        with open(os.path.join("data", uploaded_file.name), "wb") as f:
+            f.write(uploaded_file.getbuffer())
+        st.success(f"✅ {uploaded_file.name} uploaded. Reload to see updates.")
 
 # --- Filters ---
 st.markdown("### 🔍 Search Intellectual Property Records")
@@ -153,7 +160,7 @@ if date_range:
         start, end = pd.to_datetime(date_range[0]), pd.to_datetime(date_range[1])
         filtered_df = filtered_df[filtered_df['Date Applied'].between(start, end)]
 
-# --- Sidebar: Row Highlight Colors ---
+# --- Row Color Customization ---
 st.sidebar.markdown("### 🎛️ Row Colors by IP Type")
 show_colors = st.sidebar.toggle("🎨 Customize Row Colors", value=False)
 
@@ -162,7 +169,6 @@ enable_coloring = False
 
 if show_colors:
     enable_coloring = st.sidebar.checkbox("Enable Row Coloring", value=True)
-    
     if 'IP Type' in filtered_df.columns:
         ip_types = sorted(filtered_df['IP Type'].dropna().unique())
         for ip in ip_types:
@@ -191,3 +197,8 @@ else:
         st.markdown(styled_df.to_html(escape=False), unsafe_allow_html=True)
     else:
         st.dataframe(display_df, use_container_width=True, height=600)
+
+    # --- Moderator: Download filtered data ---
+    if role == "Moderator" or role == "Admin":
+        csv = display_df.to_csv(index=False).encode("utf-8")
+        st.download_button("⬇️ Download Filtered Results", data=csv, file_name="filtered_ip_data.csv", mime="text/csv")
