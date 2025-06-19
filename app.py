@@ -32,7 +32,7 @@ st.markdown("""
 # --- Logo and Title ---
 st.markdown("""
     <div style="text-align: center;">
-        <img src="https://raw.githubusercontent.com/iprobsu/ip-dashboard/main/ipro-logo.png" alt="IPRO Logo" class="glow-logo" />
+        <img src="https://raw.githubusercontent.com/iprobsu/ip-dashboard/main/ipro_logo.png" alt="IPRO Logo" class="glow-logo" />
         <h1>📚 IP Masterlist Dashboard</h1>
     </div>
 """, unsafe_allow_html=True)
