@@ -5,6 +5,52 @@ import os
 # --- Page Setup ---
 st.set_page_config(page_title="IP Masterlist Dashboard", layout="wide")
 
+# --- Dark Mode Toggle ---
+st.sidebar.markdown("### ⚙️ Appearance Settings")
+dark_mode = st.sidebar.toggle("🌗 Enable Dark Mode", value=False)
+
+# --- Apply Dark Mode Styling ---
+if dark_mode:
+    st.markdown("""
+        <style>
+            html, body, [class*="css"] {
+                background-color: #121212 !important;
+                color: #e0e0e0 !important;
+                font-family: 'Roboto', sans-serif;
+            }
+
+            .stTextInput input, .stSelectbox div, .stDateInput input, .stMultiSelect div {
+                background-color: #2c2c2c !important;
+                color: #ffffff !important;
+                border: none !important;
+            }
+
+            .stDataFrame, .stTable {
+                background-color: #1e1e1e !important;
+                color: #ffffff !important;
+            }
+
+            .block-container, .sidebar-content, .css-1avcm0n, .css-1d391kg {
+                background-color: #121212 !important;
+                color: #ffffff !important;
+            }
+
+            h1, h2, h3, h4, h5, h6 {
+                color: #ffffff !important;
+            }
+
+            .stButton>button {
+                background-color: #333333 !important;
+                color: #ffffff !important;
+                border: none !important;
+            }
+
+            .glow-logo {
+                filter: drop-shadow(0 0 10px #00ffaa);
+            }
+        </style>
+    """, unsafe_allow_html=True)
+
 # --- Fonts & Logo Styling ---
 st.markdown("""
     <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;700&display=swap" rel="stylesheet">
@@ -108,14 +154,13 @@ if date_range:
         filtered_df = filtered_df[filtered_df['Date Applied'].between(start, end)]
 
 # --- Sidebar: Row Highlight Colors ---
-st.sidebar.markdown("### 🎛️ Options")
+st.sidebar.markdown("### 🎛️ Row Colors by IP Type")
 show_colors = st.sidebar.toggle("🎨 Customize Row Colors", value=False)
 
 ip_color_map = {}
 enable_coloring = False
 
 if show_colors:
-    st.sidebar.markdown("---")
     enable_coloring = st.sidebar.checkbox("Enable Row Coloring", value=True)
     
     if 'IP Type' in filtered_df.columns:
@@ -139,7 +184,8 @@ else:
     if enable_coloring and ip_color_map:
         def apply_color(row):
             bg = ip_color_map.get(row['IP Type'], '#ffffff')
-            return [f'background-color: {bg}'] * len(row)
+            text_color = '#ffffff' if dark_mode else '#000000'
+            return [f'background-color: {bg}; color: {text_color}'] * len(row)
 
         styled_df = display_df.style.apply(apply_color, axis=1)
         st.markdown(styled_df.to_html(escape=False), unsafe_allow_html=True)
