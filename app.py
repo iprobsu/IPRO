@@ -40,25 +40,54 @@ if dark_mode:
             html, body, [class*="css"] {
                 background-color: #121212 !important;
                 color: #e0e0e0 !important;
+                font-family: 'Roboto', sans-serif;
             }
-            .stTextInput > div > div > input,
-            .stSelectbox > div > div,
-            .stDateInput input {
+
+            /* Input, select, and textarea fields */
+            input, select, textarea {
                 background-color: #2c2c2c !important;
-                color: #e0e0e0 !important;
+                color: #ffffff !important;
+                border: 1px solid #555 !important;
             }
+
+            /* Buttons */
+            button {
+                color: #ffffff !important;
+            }
+
+            /* General widget containers */
+            .stTextInput, .stSelectbox, .stDateInput, .stMultiSelect, .stSlider {
+                color: #ffffff !important;
+            }
+
+            /* DataFrame + Tables */
             .stDataFrame, .stTable {
                 background-color: #1e1e1e !important;
+                color: #ffffff !important;
             }
-            .css-1aumxhk, .css-1dp5vir, .block-container {
-                background-color: #121212 !important;
+
+            /* Sidebar containers */
+            .css-1avcm0n, .css-1d391kg, .css-1dp5vir {
+                background-color: #1e1e1e !important;
+                color: #ffffff !important;
             }
-            .css-1avcm0n {
-                background-color: #2c2c2c !important;
+
+            /* Headers */
+            h1, h2, h3, h4, h5, h6 {
+                color: #ffffff !important;
+            }
+
+            /* Markdown text */
+            .block-container, .markdown-text-container {
+                color: #ffffff !important;
+            }
+
+            /* Glow logo still visible in dark mode */
+            .glow-logo {
+                filter: drop-shadow(0 0 10px #00ffaa);
             }
         </style>
     """, unsafe_allow_html=True)
-
 
 # --- Logo and Title ---
 st.markdown("""
