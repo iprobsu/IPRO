@@ -134,5 +134,12 @@ if date_range:
         filtered_df = filtered_df[filtered_df['Date Applied'].between(start, end)]
 
 # --- Display Results ---
-st.markdown(f"### 📄 Showing {len(filtered_df)} results")
-st.dataframe(filtered_df, use_container_width=True, height=600)
+if filtered_df.empty:
+    st.warning("😕 No records matched your filters or search term.")
+else:
+    grouped = filtered_df.groupby("IP Type")
+    for ip_type_name, group in grouped:
+        if not group.empty:
+            st.markdown(f"### 📄 {ip_type_name} ({len(group)} result{'s' if len(group) != 1 else ''})")
+            st.dataframe(group.reset_index(drop=True), use_container_width=True)
+
