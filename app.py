@@ -116,36 +116,33 @@ if date_range:
         start, end = pd.to_datetime(date_range[0]), pd.to_datetime(date_range[1])
         filtered_df = filtered_df[filtered_df['Date Applied'].between(start, end)]
 
-# --- Display Results with Dynamic Columns and Coloring ---
-# --- Display Results ---
+# --- Display Results with Optional Color Highlighting ---
 if filtered_df.empty:
     st.warning("😕 No records matched your filters or search term.")
 else:
-    # Remove all-empty columns
-    non_empty_df = filtered_df.dropna(axis=1, how='all')
-    non_empty_df = non_empty_df.loc[:, ~(non_empty_df == '').all()]
+    # Step 1: Remove columns with all blanks or NaNs
+    clean_df = filtered_df.dropna(axis=1, how='all')
+    clean_df = clean_df.loc[:, ~(clean_df == '').all()]
 
-    # Sidebar controls
+    # Step 2: Sidebar toggle for coloring
     st.sidebar.markdown("🎨 Customize Row Highlighting by IP Type")
     enable_coloring = st.sidebar.checkbox("Enable Row Coloring")
 
-    if enable_coloring:
-        # Generate a color picker per unique IP Type
-        ip_types = sorted(non_empty_df['IP Type'].dropna().unique())
+    if enable_coloring and 'IP Type' in clean_df.columns:
+        ip_types = sorted(clean_df['IP Type'].dropna().unique())
         color_map = {}
+
         for ip in ip_types:
             color = st.sidebar.color_picker(f"{ip}", "#ffffff")
             color_map[ip] = color
 
-        # Apply color to rows based on IP Type
-        def highlight(row):
+        def style_rows(row):
             bg = color_map.get(row['IP Type'], '#ffffff')
             return [f'background-color: {bg}'] * len(row)
 
-        styled_df = non_empty_df.style.apply(highlight, axis=1)
-        st.markdown(f"### 📄 Showing {len(non_empty_df)} result{'s' if len(non_empty_df) != 1 else ''}")
-        st.write(styled_df)
+        styled_df = clean_df.style.apply(style_rows, axis=1)
+        st.markdown(f"### 📄 Showing {len(clean_df)} result{'s' if len(clean_df) != 1 else ''}")
+        st.write(styled_df)  # This is critical for styling to show
     else:
-        # No coloring, plain table
-        st.markdown(f"### 📄 Showing {len(non_empty_df)} result{'s' if len(non_empty_df) != 1 else ''}")
-        st.dataframe(non_empty_df, use_container_width=True, height=600)
+        st.markdown(f"### 📄 Showing {len(clean_df)} result{'s' if len(clean_df) != 1 else ''}")
+        st.dataframe(clean_df, use_container_width=True, height=600)
