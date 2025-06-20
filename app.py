@@ -51,9 +51,6 @@ if not st.session_state.logged_in:
                 st.error("❌ Invalid username or password")
     st.stop()
 
-# --- Sidebar ---
-st.sidebar.markdown(f"**🔒 Current Role:** {st.session_state.role}")
-dark_mode = st.sidebar.toggle("🌗 Enable Dark Mode", value=False)
 
 # --- Apply Dark Mode Styling ---
 if dark_mode:
