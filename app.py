@@ -164,11 +164,24 @@ def dashboard():
 
     st.sidebar.markdown("🎨 **Customize Row Colors by IP Type**")
     enable_coloring = st.sidebar.checkbox("Enable Row Coloring")
-    ip_color_map = {}
+
+    default_colors = {
+        "Copyright": "#FFD8A8",
+        "ISBN": "#E6CCFF",
+        "ISSN": "#D3D3D3",
+        "Industrial Design": "#FFFF99",
+        "Trademark": "#ADD8E6",
+        "Patent": "#90EE90",
+        "Utility Model": "#FFB6C1"
+    }
+
+    ip_color_map = default_colors.copy()
+
     if enable_coloring and 'IP Type' in filtered_df.columns:
         ip_types = sorted(filtered_df['IP Type'].dropna().unique())
         for ip in ip_types:
-            ip_color_map[ip] = st.sidebar.color_picker("", "#ffffff", key=f"color_{ip}")
+            default = default_colors.get(ip, "#ffffff")
+            ip_color_map[ip] = st.sidebar.color_picker("", default, key=f"color_{ip}")
             st.sidebar.markdown(f"<div style='margin-top:-25px; margin-bottom:10px;'>{ip}</div>", unsafe_allow_html=True)
 
     if st.session_state.role == "admin":
