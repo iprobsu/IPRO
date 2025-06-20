@@ -30,6 +30,13 @@ def authenticate(username, password, credentials):
         return credentials[username]["password"] == hash_password(password)
     return False
 
+def change_password(username, old_pw, new_pw, credentials):
+    if authenticate(username, old_pw, credentials):
+        credentials[username]["password"] = hash_password(new_pw)
+        save_credentials(credentials)
+        return True
+    return False
+
 # ------------------- SESSION SETUP -------------------
 if "logged_in" not in st.session_state:
     st.session_state.logged_in = False
@@ -92,6 +99,22 @@ if not st.session_state.logged_in:
 st.set_page_config(page_title="IP Masterlist Dashboard", layout="wide")
 role = st.session_state.role
 st.sidebar.markdown(f"**🔒 Current Role:** {role}")
+
+# ------------------- CHANGE PASSWORD -------------------
+if st.sidebar.button("🔧 Change Password"):
+    with st.sidebar.form("change_pw_form"):
+        st.markdown("#### 🔐 Change Your Password")
+        old_pw = st.text_input("Old Password", type="password")
+        new_pw = st.text_input("New Password", type="password")
+        confirm_pw = st.text_input("Confirm New Password", type="password")
+        submitted = st.form_submit_button("Update Password")
+        if submitted:
+            if new_pw != confirm_pw:
+                st.warning("New passwords do not match.")
+            elif change_password(st.session_state.username, old_pw, new_pw, credentials):
+                st.success("✅ Password successfully changed!")
+            else:
+                st.error("❌ Incorrect old password.")
 
 # ------------------- MAIN DASHBOARD -------------------
 st.markdown("""
