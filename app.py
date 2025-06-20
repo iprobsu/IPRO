@@ -162,10 +162,7 @@ def dashboard():
             start, end = pd.to_datetime(date_range[0]), pd.to_datetime(date_range[1])
             filtered_df = filtered_df[filtered_df['Date Applied'].between(start, end)]
 
-    st.sidebar.markdown("🎨 **Customize Row Colors by IP Type**")
-    enable_coloring = st.sidebar.checkbox("Enable Row Coloring")
-
-    default_colors = {
+    ip_color_map = {
         "Copyright": "#FFD8A8",
         "ISBN": "#E6CCFF",
         "ISSN": "#D3D3D3",
@@ -175,14 +172,8 @@ def dashboard():
         "Utility Model": "#FFB6C1"
     }
 
-    ip_color_map = default_colors.copy()
-
-    if enable_coloring and 'IP Type' in filtered_df.columns:
-        ip_types = sorted(filtered_df['IP Type'].dropna().unique())
-        for ip in ip_types:
-            default = default_colors.get(ip, "#ffffff")
-            ip_color_map[ip] = st.sidebar.color_picker("", default, key=f"color_{ip}")
-            st.sidebar.markdown(f"<div style='margin-top:-25px; margin-bottom:10px;'>{ip}</div>", unsafe_allow_html=True)
+    st.sidebar.markdown("🎨 **Highlight Rows by IP Type**")
+    enable_coloring = st.sidebar.checkbox("Enable Row Coloring")
 
     if st.session_state.role == "admin":
         st.sidebar.divider()
@@ -195,7 +186,7 @@ def dashboard():
         display_df = display_df.loc[:, ~(display_df == '').all()]
         st.markdown(f"### 📄 Showing {len(display_df)} result{'s' if len(display_df) != 1 else ''}")
 
-        if enable_coloring and ip_color_map:
+        if enable_coloring:
             def apply_color(row):
                 bg = ip_color_map.get(row['IP Type'], '#ffffff')
                 return [f'background-color: {bg}'] * len(row)
