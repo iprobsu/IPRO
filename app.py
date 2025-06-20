@@ -181,6 +181,7 @@ def dashboard():
         else:
             st.dataframe(display_df, use_container_width=True, height=600)
 
+    st.write(f"Your role is: {st.session_state.role}")  # Debug line to check role
     if st.session_state.role == "admin":
         st.divider()
         admin_tools()
