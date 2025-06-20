@@ -79,11 +79,11 @@ if dark_mode:
                 color: #ffffff !important;
                 border: none !important;
             }
-            .stDataFrame, .stTable, .element-container .row-widget.stRadio, .stExpanderHeader {
+            .stDataFrame, .stTable, .element-container .row-widget.stRadio, .stExpanderHeader, .css-1l269bu {
                 background-color: #1e1e1e !important;
                 color: #ffffff !important;
             }
-            .block-container, .sidebar-content, .css-1avcm0n, .css-1d391kg, .stSidebar {
+            .block-container, .sidebar-content, .css-1avcm0n, .css-1d391kg, .stSidebar, .st-emotion-cache-1dj1jju {
                 background-color: #121212 !important;
                 color: #ffffff !important;
             }
