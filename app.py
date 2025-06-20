@@ -6,7 +6,6 @@ import os
 st.set_page_config(page_title="IP Masterlist Dashboard", layout="wide")
 
 # --- Login (Password-Based) ---
-# --- Login (Password-Based) ---
 st.sidebar.markdown("### 🔐 Login")
 
 password = st.sidebar.text_input("Enter Admin Password", type="password")
@@ -23,6 +22,11 @@ else:
     role = "Moderator"
 
 st.sidebar.markdown(f"**🔒 Current Role:** {role}")
+
+# --- Block Access Unless Logged In ---
+if role == "Moderator" and password == "":
+    st.warning("🚫 Access denied. Please enter a valid password to access the dashboard.")
+    st.stop()
 
 # --- Dark Mode Toggle ---
 dark_mode = st.sidebar.toggle("🌗 Enable Dark Mode", value=False)
@@ -211,7 +215,7 @@ else:
     else:
         st.dataframe(display_df, use_container_width=True, height=600)
 
-    # --- Moderator: Download filtered data ---
-    if role == "Moderator" or role == "Admin":
+    # --- Moderator & Admin: Download filtered data ---
+    if role in ["Moderator", "Admin"]:
         csv = display_df.to_csv(index=False).encode("utf-8")
         st.download_button("⬇️ Download Filtered Results", data=csv, file_name="filtered_ip_data.csv", mime="text/csv")
