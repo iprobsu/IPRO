@@ -1,89 +1,138 @@
 import streamlit as st
 import pandas as pd
 import os
-import json
-import hashlib
 
-# ------------------- CONFIG -------------------
-CREDENTIALS_FILE = "users.json"
-DEFAULT_USERS = {
-    "admin": {"password": "admin123", "role": "Admin"},
-    "mod": {"password": "mod123", "role": "Moderator"}
-}
+# --- Page Setup ---
+st.set_page_config(page_title="IP Masterlist Dashboard", layout="wide")
 
-# ------------------- UTILS -------------------
-def hash_password(password):
-    return hashlib.sha256(password.encode()).hexdigest()
+# --- Fonts & Logo Styling ---
+st.markdown("""
+    <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;700&display=swap" rel="stylesheet">
+    <style>
+        html, body, [class*="css"] {
+            font-family: 'Roboto', sans-serif;
+        }
+        .glow-logo {
+            width: 80px;
+            filter: drop-shadow(0 0 8px #00ffaa);
+            animation: bounce 2s infinite;
+        }
+        @keyframes bounce {
+            0%, 100% { transform: translateY(0); }
+            50% { transform: translateY(-10px); }
+        }
+        h1 {
+            text-align: center;
+            font-size: 2rem;
+            margin-top: 0.5rem;
+        }
+    </style>
+""", unsafe_allow_html=True)
 
-def load_users():
-    if not os.path.exists(CREDENTIALS_FILE):
-        with open(CREDENTIALS_FILE, "w") as f:
-            json.dump({k: {"password": hash_password(v["password"]), "role": v["role"]} 
-                      for k, v in DEFAULT_USERS.items()}, f)
-    with open(CREDENTIALS_FILE, "r") as f:
-        return json.load(f)
+# --- Logo and Title ---
+st.markdown("""
+    <div style="text-align: center;">
+        <img src="https://raw.githubusercontent.com/iprobsu/IPRO/main/ipro_logo.png" alt="IPRO Logo" class="glow-logo" />
+        <h1>📚 IP Masterlist Dashboard</h1>
+    </div>
+""", unsafe_allow_html=True)
 
-def save_users(users):
-    with open(CREDENTIALS_FILE, "w") as f:
-        json.dump(users, f, indent=4)
+# --- Load All Excel Files ---
+@st.cache_data
+def load_data():
+    data_dir = "data"
+    all_data = []
+    for filename in os.listdir(data_dir):
+        if filename.endswith(".xlsx"):
+            year = filename[:4]
+            path = os.path.join(data_dir, filename)
+            xls = pd.read_excel(path, sheet_name=None, engine="openpyxl")
+            for sheet_name, df in xls.items():
+                df["Year"] = year
+                df["IP Type"] = sheet_name
+                df["Source File"] = filename
+                all_data.append(df)
+    df = pd.concat(all_data, ignore_index=True)
+    df['Date Applied'] = pd.to_datetime(df.get('Date Applied', pd.NaT), errors='coerce')
+    df['Date Approved'] = pd.to_datetime(df.get('Date Approved', pd.NaT), errors='coerce')
+    df.fillna('', inplace=True)
+    if 'Author' in df.columns:
+        df['Author'] = df['Author'].astype(str).str.replace(';', ',').str.split(',')
+        df['Author'] = df['Author'].apply(lambda x: [a.strip() for a in x])
+        df = df.explode('Author').reset_index(drop=True)
+    return df
 
-users = load_users()
+df = load_data()
 
-# ------------------- SESSION SETUP -------------------
-if "logged_in" not in st.session_state:
-    st.session_state.logged_in = False
-    st.session_state.username = ""
-    st.session_state.role = None
+# --- Filters ---
+st.markdown("### 🔍 Search Intellectual Property Records")
 
-# ------------------- LOGIN -------------------
-if not st.session_state.logged_in:
-    st.title("🔐 IPRO Dashboard Login")
-    with st.form("login_form"):
-        username = st.text_input("Username")
-        password = st.text_input("Password", type="password")
-        submit = st.form_submit_button("Login")
+col1, col2, col3 = st.columns([3, 2, 2])
+with col1:
+    search_term = st.text_input("Search by Author or Title")
+with col2:
+    ip_type = st.selectbox("Filter by IP Type", ["All"] + sorted(df['IP Type'].unique()))
+with col3:
+    year = st.selectbox("Sort by Year", ["All"] + sorted(df['Year'].unique()))
 
-    if submit:
-        user = users.get(username)
-        if user and user["password"] == hash_password(password):
-            st.session_state.logged_in = True
-            st.session_state.username = username
-            st.session_state.role = user["role"]
-            st.rerun()
-        else:
-            st.error("❌ Invalid username or password")
-    st.stop()
+# --- Advanced Filters ---
+with st.expander("📂 Advanced Filters"):
+    col4, col5, col6 = st.columns(3)
+    with col4:
+        college = st.selectbox("Filter by College", ["All"] + sorted(df['College'].unique()) if 'College' in df else ["All"])
+    with col5:
+        campus = st.selectbox("Filter by Campus", ["All"] + sorted(df['Campus'].unique()) if 'Campus' in df else ["All"])
+    with col6:
+        date_range = st.date_input("Filter by Date Applied", [])
 
-# ------------------- MAIN DASHBOARD -------------------
-st.sidebar.markdown(f"**🔒 Logged in as:** `{st.session_state.username}` ({st.session_state.role})")
-logout = st.sidebar.button("🚪 Logout")
-if logout:
-    st.session_state.logged_in = False
-    st.session_state.username = ""
-    st.session_state.role = None
-    st.rerun()
+# --- Apply Filters ---
+filtered_df = df.copy()
+if search_term:
+    filtered_df = filtered_df[
+        filtered_df['Author'].astype(str).str.contains(search_term, case=False, na=False) |
+        filtered_df['Title'].astype(str).str.contains(search_term, case=False, na=False)
+    ]
+if ip_type != "All":
+    filtered_df = filtered_df[filtered_df['IP Type'] == ip_type]
+if year != "All":
+    filtered_df = filtered_df[filtered_df['Year'] == year]
+if 'College' in df.columns and college != "All":
+    filtered_df = filtered_df[filtered_df['College'] == college]
+if 'Campus' in df.columns and campus != "All":
+    filtered_df = filtered_df[filtered_df['Campus'] == campus]
+if date_range:
+    if len(date_range) == 1:
+        filtered_df = filtered_df[filtered_df['Date Applied'] >= pd.to_datetime(date_range[0])]
+    elif len(date_range) == 2:
+        start, end = pd.to_datetime(date_range[0]), pd.to_datetime(date_range[1])
+        filtered_df = filtered_df[filtered_df['Date Applied'].between(start, end)]
 
-st.title("📚 IP Masterlist Dashboard")
+# --- Sidebar: Row Highlight Colors ---
+st.sidebar.markdown("🎨 **Customize Row Colors by IP Type**")
+enable_coloring = st.sidebar.checkbox("Enable Row Coloring")
 
-# ------------------- ADMIN CHANGE PASSWORD -------------------
-if st.session_state.role == "Admin":
-    st.subheader("🔑 Admin: Change a User's Password")
-    with st.form("change_password"):
-        target_user = st.selectbox("Select User", list(users.keys()))
-        new_pw = st.text_input("New Password", type="password")
-        confirm_pw = st.text_input("Confirm Password", type="password")
-        update_btn = st.form_submit_button("Update Password")
+ip_color_map = {}
+if enable_coloring and 'IP Type' in filtered_df.columns:
+    ip_types = sorted(filtered_df['IP Type'].dropna().unique())
+    for ip in ip_types:
+        ip_color_map[ip] = st.sidebar.color_picker("", "#ffffff", key=f"color_{ip}")
+        st.sidebar.markdown(f"<div style='margin-top:-25px; margin-bottom:10px;'>{ip}</div>", unsafe_allow_html=True)
 
-    if update_btn:
-        if new_pw != confirm_pw:
-            st.error("❌ Passwords do not match")
-        elif not new_pw.strip():
-            st.error("❌ Password cannot be empty")
-        else:
-            users[target_user]["password"] = hash_password(new_pw)
-            save_users(users)
-            st.success(f"✅ Password for `{target_user}` updated.")
+# --- Display Results ---
+if filtered_df.empty:
+    st.warning("😕 No records matched your filters or search term.")
+else:
+    display_df = filtered_df.dropna(axis=1, how='all')
+    display_df = display_df.loc[:, ~(display_df == '').all()]
 
-# ------------------- Place your IP dashboard below -------------------
-st.markdown("---")
-st.markdown("🔍 Your dashboard content would continue below here...")
+    st.markdown(f"### 📄 Showing {len(display_df)} result{'s' if len(display_df) != 1 else ''}")
+
+    if enable_coloring and ip_color_map:
+        def apply_color(row):
+            bg = ip_color_map.get(row['IP Type'], '#ffffff')
+            return [f'background-color: {bg}'] * len(row)
+
+        styled_df = display_df.style.apply(apply_color, axis=1)
+        st.markdown(styled_df.to_html(escape=False), unsafe_allow_html=True)
+    else:
+        st.dataframe(display_df, use_container_width=True, height=600)
