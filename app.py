@@ -49,16 +49,11 @@ if "logged_in" not in st.session_state:
     st.session_state.username = ""
     st.session_state.role = ""
 
-# Reset button in sidebar
-if st.sidebar.button("🔁 Reset to Default Users"):
-    reset_users()
-    st.success("Users reset to default! Try logging in again.")
-
-credentials = load_credentials()
-
 # ------------------- LOGIN SCREEN -------------------
 if not st.session_state.logged_in:
     st.set_page_config(page_title="Login | IP Masterlist Dashboard", layout="centered")
+
+    credentials = load_credentials()
 
     st.markdown("""
         <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;700&display=swap" rel="stylesheet">
@@ -96,7 +91,18 @@ if not st.session_state.logged_in:
     username = st.text_input("👤 Username")
     password = st.text_input("🔑 Password", type="password")
 
-    if st.button("Login"):
+    col1, col2 = st.columns([1, 1])
+    with col1:
+        login_btn = st.button("Login")
+    with col2:
+        reset_btn = st.button("🔁 Reset to Default Users")
+
+    if reset_btn:
+        reset_users()
+        st.success("Users reset to default! Try logging in again.")
+        st.stop()
+
+    if login_btn:
         if authenticate(username, password, credentials):
             st.session_state.logged_in = True
             st.session_state.username = username
@@ -121,6 +127,7 @@ if st.sidebar.button("🔧 Change Password"):
         confirm_pw = st.text_input("Confirm New Password", type="password")
         submitted = st.form_submit_button("Update Password")
         if submitted:
+            credentials = load_credentials()
             if new_pw != confirm_pw:
                 st.warning("New passwords do not match.")
             elif change_password(st.session_state.username, old_pw, new_pw, credentials):
