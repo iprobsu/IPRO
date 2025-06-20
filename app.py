@@ -104,6 +104,12 @@ def admin_tools_sidebar():
             f.write(uploaded_file.read())
         st.sidebar.success(f"Uploaded {uploaded_file.name}")
 
+    st.sidebar.subheader("🗑️ Delete File")
+    file_to_delete = st.sidebar.selectbox("Select file to delete", [f for f in os.listdir("data") if f.endswith(".xlsx")], key="delete_select")
+    if st.sidebar.button("Delete File"):
+        os.remove(os.path.join("data", file_to_delete))
+        st.sidebar.success(f"Deleted {file_to_delete}")
+
     st.sidebar.subheader("🔐 Change Passwords")
     user_to_change = st.sidebar.selectbox("Select user", list(st.session_state.passwords.keys()))
     new_pw = st.sidebar.text_input("New password", type="password")
