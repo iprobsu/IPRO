@@ -44,14 +44,15 @@ if "logged_in" not in st.session_state:
 # ---------- LOGIN ----------
 def login():
     st.markdown("### 🔐 Login to Access IP Dashboard")
-    username = st.text_input("Username")
-    password = st.text_input("Password", type="password")
-    if st.button("Login"):
-        if username in st.session_state.passwords and st.session_state.passwords[username] == password:
-            st.session_state.logged_in = True
-            st.session_state.role = "admin" if username == "admin" else "moderator"
-            st.success(f"Logged in as {st.session_state.role.title()} ✅")
-        else:
+    username = st.text_input("Username", key="login_user")
+    password = st.text_input("Password", type="password", key="login_pass")
+
+    if username in st.session_state.passwords and st.session_state.passwords[username] == password:
+        st.session_state.logged_in = True
+        st.session_state.role = "admin" if username == "admin" else "moderator"
+        st.rerun()
+    else:
+        if username and password:
             st.error("Invalid credentials ❌")
 
 # ---------- LOAD DATA ----------
@@ -80,30 +81,30 @@ def load_data():
     return df
 
 # ---------- ADMIN TOOLS ----------
-def admin_tools():
-    st.markdown("### 🛠 Admin Tools")
-    st.subheader("🔁 Replace Existing File")
-    file_to_replace = st.selectbox("Select file to replace", [f for f in os.listdir("data") if f.endswith(".xlsx")])
-    new_file = st.file_uploader("Upload new version", type=["xlsx"], key="replace")
-    if new_file and st.button("Replace File"):
+def admin_tools_sidebar():
+    st.sidebar.markdown("### 🛠 Admin Tools")
+    st.sidebar.subheader("🔁 Replace Existing File")
+    file_to_replace = st.sidebar.selectbox("Select file to replace", [f for f in os.listdir("data") if f.endswith(".xlsx")])
+    new_file = st.sidebar.file_uploader("Upload new version", type=["xlsx"], key="replace")
+    if new_file and st.sidebar.button("Replace File"):
         with open(os.path.join("data", file_to_replace), "wb") as f:
             f.write(new_file.read())
-        st.success(f"Replaced {file_to_replace}")
+        st.sidebar.success(f"Replaced {file_to_replace}")
 
-    st.subheader("➕ Upload New File")
-    uploaded_file = st.file_uploader("Upload new Excel file", type=["xlsx"], key="upload")
-    if uploaded_file and st.button("Upload File"):
+    st.sidebar.subheader("➕ Upload New File")
+    uploaded_file = st.sidebar.file_uploader("Upload new Excel file", type=["xlsx"], key="upload")
+    if uploaded_file and st.sidebar.button("Upload File"):
         save_path = os.path.join("data", uploaded_file.name)
         with open(save_path, "wb") as f:
             f.write(uploaded_file.read())
-        st.success(f"Uploaded {uploaded_file.name}")
+        st.sidebar.success(f"Uploaded {uploaded_file.name}")
 
-    st.subheader("🔐 Change Passwords")
-    user_to_change = st.selectbox("Select user", list(st.session_state.passwords.keys()))
-    new_pw = st.text_input("New password", type="password")
-    if st.button("Change Password"):
+    st.sidebar.subheader("🔐 Change Passwords")
+    user_to_change = st.sidebar.selectbox("Select user", list(st.session_state.passwords.keys()))
+    new_pw = st.sidebar.text_input("New password", type="password")
+    if st.sidebar.button("Change Password"):
         st.session_state.passwords[user_to_change] = new_pw
-        st.success(f"Password updated for {user_to_change}")
+        st.sidebar.success(f"Password updated for {user_to_change}")
 
 # ---------- DASHBOARD ----------
 def dashboard():
@@ -165,6 +166,10 @@ def dashboard():
             ip_color_map[ip] = st.sidebar.color_picker("", "#ffffff", key=f"color_{ip}")
             st.sidebar.markdown(f"<div style='margin-top:-25px; margin-bottom:10px;'>{ip}</div>", unsafe_allow_html=True)
 
+    if st.session_state.role == "admin":
+        st.sidebar.divider()
+        admin_tools_sidebar()
+
     if filtered_df.empty:
         st.warning("😕 No records matched your filters or search term.")
     else:
@@ -180,11 +185,6 @@ def dashboard():
             st.markdown(styled_df.to_html(escape=False), unsafe_allow_html=True)
         else:
             st.dataframe(display_df, use_container_width=True, height=600)
-
-    st.write(f"Your role is: {st.session_state.role}")  # Debug line to check role
-    if st.session_state.role == "admin":
-        st.divider()
-        admin_tools()
 
 # ---------- MAIN ----------
 if not st.session_state.logged_in:
