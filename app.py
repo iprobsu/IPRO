@@ -40,72 +40,98 @@ credentials = load_credentials()
 
 # ------------------- LOGIN PAGE -------------------
 if not st.session_state.logged_in:
-    st.set_page_config(page_title="IPRO Login", layout="centered")
-    st.markdown(
-        """
+    st.set_page_config(page_title="IP Masterlist Dashboard", layout="wide")
+
+    st.sidebar.markdown("### 🔐 Login")
+    username = st.sidebar.text_input("Username")
+    password = st.sidebar.text_input("Enter Password", type="password")
+
+    if password == "" or username == "":
+        st.sidebar.info("🔑 Enter credentials to access Admin features.")
+        role = "Moderator"
+    elif authenticate(username, password, credentials):
+        st.session_state.logged_in = True
+        st.session_state.username = username
+        st.session_state.role = credentials[username]["role"]
+        st.experimental_rerun()
+    else:
+        st.sidebar.error("❌ Incorrect credentials. You are in Moderator (view-only) mode.")
+        st.session_state.role = "Moderator"
+        st.stop()
+
+# ------------------- LOGGED IN -------------------
+role = st.session_state.role
+st.sidebar.markdown(f"**🔒 Current Role:** {role}")
+
+# --- Dark Mode Toggle ---
+dark_mode = st.sidebar.toggle("🌗 Enable Dark Mode", value=False)
+
+if dark_mode:
+    st.markdown("""
         <style>
-            .centered {text-align: center;}
-            .login-box {
-                background-color: #f0f2f6;
-                padding: 2rem;
-                border-radius: 10px;
-                box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
-                width: 100%;
-                max-width: 400px;
-                margin: auto;
-                margin-top: 100px;
+            html, body, [class*="css"] {
+                background-color: #121212 !important;
+                color: #e0e0e0 !important;
+                font-family: 'Roboto', sans-serif;
+            }
+            .stTextInput input, .stSelectbox div, .stDateInput input, .stMultiSelect div {
+                background-color: #2c2c2c !important;
+                color: #ffffff !important;
+                border: none !important;
+            }
+            .stDataFrame, .stTable {
+                background-color: #1e1e1e !important;
+                color: #ffffff !important;
+            }
+            .block-container, .sidebar-content, .css-1avcm0n, .css-1d391kg {
+                background-color: #121212 !important;
+                color: #ffffff !important;
+            }
+            h1, h2, h3, h4, h5, h6 {
+                color: #ffffff !important;
+            }
+            .stButton>button {
+                background-color: #333333 !important;
+                color: #ffffff !important;
+                border: none !important;
+            }
+            .glow-logo {
+                filter: drop-shadow(0 0 10px #00ffaa);
             }
         </style>
-        """, unsafe_allow_html=True)
-    st.markdown('<div class="login-box">', unsafe_allow_html=True)
-    st.image("https://raw.githubusercontent.com/iprobsu/IPRO/main/ipro_logo.png", width=100)
-    st.markdown("<h3 class='centered'>🔐 IPRO Dashboard Login</h3>", unsafe_allow_html=True)
-    with st.form("login_form"):
-        username = st.text_input("Username")
-        password = st.text_input("Password", type="password")
-        submitted = st.form_submit_button("Login")
-        if submitted:
-            if authenticate(username, password, credentials):
-                st.session_state.logged_in = True
-                st.session_state.username = username
-                st.session_state.role = credentials[username]["role"]
-                st.success(f"✅ Welcome, {username}!")
-                st.rerun()
-            else:
-                st.error("❌ Invalid username or password")
-    st.markdown("</div>", unsafe_allow_html=True)
-    st.stop()
+    """, unsafe_allow_html=True)
 
-# ------------------- LOGGED IN MENU -------------------
-st.set_page_config(page_title="IP Masterlist Dashboard", layout="wide")
-st.sidebar.image("https://raw.githubusercontent.com/iprobsu/IPRO/main/ipro_logo.png", width=100)
-st.sidebar.markdown(f"**👋 Logged in as:** `{st.session_state.username}`  ")
-st.sidebar.markdown(f"**🔒 Role:** `{st.session_state.role}`")
+st.markdown("""
+    <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;700&display=swap" rel="stylesheet">
+    <style>
+        html, body, [class*="css"] {
+            font-family: 'Roboto', sans-serif;
+        }
+        .glow-logo {
+            width: 80px;
+            filter: drop-shadow(0 0 8px #00ffaa);
+            animation: bounce 2s infinite;
+        }
+        @keyframes bounce {
+            0%, 100% { transform: translateY(0); }
+            50% { transform: translateY(-10px); }
+        }
+        h1 {
+            text-align: center;
+            font-size: 2rem;
+            margin-top: 0.5rem;
+        }
+    </style>
+""", unsafe_allow_html=True)
 
-if st.sidebar.button("🚪 Logout"):
-    st.session_state.logged_in = False
-    st.session_state.username = ""
-    st.session_state.role = ""
-    st.rerun()
-
-if st.session_state.role == "Admin":
-    st.sidebar.markdown("---")
-    st.sidebar.markdown("### 🔑 Change User Password")
-    user_to_change = st.sidebar.selectbox("Select User", list(credentials.keys()))
-    new_pass = st.sidebar.text_input("New Password", type="password", key="change_pass")
-    if st.sidebar.button("🔁 Change Password"):
-        credentials[user_to_change]["password"] = hash_password(new_pass)
-        save_credentials(credentials)
-        st.sidebar.success(f"Password for `{user_to_change}` updated!")
-
-# ------------------- DASHBOARD -------------------
 st.markdown("""
     <div style="text-align: center;">
-        <img src="https://raw.githubusercontent.com/iprobsu/IPRO/main/ipro_logo.png" class="glow-logo" width="80">
+        <img src="https://raw.githubusercontent.com/iprobsu/IPRO/main/ipro_logo.png" alt="IPRO Logo" class="glow-logo" />
         <h1>📚 IP Masterlist Dashboard</h1>
     </div>
 """, unsafe_allow_html=True)
 
+# --- Load Data ---
 def load_data():
     data_dir = "data"
     all_data = []
@@ -131,8 +157,8 @@ def load_data():
 
 df = load_data()
 
-# Admin Upload
-if st.session_state.role == "Admin":
+# --- Admin: Upload new data ---
+if role == "Admin":
     st.sidebar.markdown("### 📤 Upload New Excel File")
     uploaded_file = st.sidebar.file_uploader("Upload Excel", type=["xlsx"])
     if uploaded_file:
@@ -140,7 +166,7 @@ if st.session_state.role == "Admin":
             f.write(uploaded_file.getbuffer())
         st.success(f"✅ {uploaded_file.name} uploaded. Reload to see updates.")
 
-# Filters
+# --- Filters ---
 st.markdown("### 🔍 Search Intellectual Property Records")
 col1, col2, col3 = st.columns([3, 2, 2])
 with col1:
@@ -180,13 +206,38 @@ if date_range:
         start, end = pd.to_datetime(date_range[0]), pd.to_datetime(date_range[1])
         filtered_df = filtered_df[filtered_df['Date Applied'].between(start, end)]
 
+# --- Row Color Customization ---
+st.sidebar.markdown("### 🎛️ Row Colors by IP Type")
+show_colors = st.sidebar.toggle("🎨 Customize Row Colors", value=False)
+ip_color_map = {}
+enable_coloring = False
+if show_colors:
+    enable_coloring = st.sidebar.checkbox("Enable Row Coloring", value=True)
+    if 'IP Type' in filtered_df.columns:
+        ip_types = sorted(filtered_df['IP Type'].dropna().unique())
+        for ip in ip_types:
+            col1, col2 = st.sidebar.columns([1, 4])
+            with col1:
+                ip_color_map[ip] = st.color_picker("", "#ffffff", key=f"color_{ip}")
+            with col2:
+                st.sidebar.markdown(f"<div style='margin-top: 8px'>{ip}</div>", unsafe_allow_html=True)
+
+# --- Display Results ---
 if filtered_df.empty:
     st.warning("😕 No records matched your filters or search term.")
 else:
     display_df = filtered_df.dropna(axis=1, how='all')
     display_df = display_df.loc[:, ~(display_df == '').all()]
     st.markdown(f"### 📄 Showing {len(display_df)} result{'s' if len(display_df) != 1 else ''}")
-    st.dataframe(display_df, use_container_width=True, height=600)
-
-    csv = display_df.to_csv(index=False).encode("utf-8")
-    st.download_button("⬇️ Download Filtered Results", data=csv, file_name="filtered_ip_data.csv", mime="text/csv")
+    if enable_coloring and ip_color_map:
+        def apply_color(row):
+            bg = ip_color_map.get(row['IP Type'], '#ffffff')
+            text_color = '#ffffff' if dark_mode else '#000000'
+            return [f'background-color: {bg}; color: {text_color}'] * len(row)
+        styled_df = display_df.style.apply(apply_color, axis=1)
+        st.markdown(styled_df.to_html(escape=False), unsafe_allow_html=True)
+    else:
+        st.dataframe(display_df, use_container_width=True, height=600)
+    if role in ["Moderator", "Admin"]:
+        csv = display_df.to_csv(index=False).encode("utf-8")
+        st.download_button("⬇️ Download Filtered Results", data=csv, file_name="filtered_ip_data.csv", mime="text/csv")
