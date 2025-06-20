@@ -43,7 +43,12 @@ if "logged_in" not in st.session_state:
 
 # ---------- LOGIN ----------
 def login():
-    st.markdown("### 🔐 Login to Access IP Dashboard")
+    st.markdown("""
+        <div style="text-align: center;">
+            <img src="https://raw.githubusercontent.com/iprobsu/IPRO/main/ipro_logo.png" class="glow-logo" />
+            <h1>🔐 Login to Access IP Dashboard</h1>
+        </div>
+    """, unsafe_allow_html=True)
     username = st.text_input("Username", key="login_user")
     password = st.text_input("Password", type="password", key="login_pass")
 
