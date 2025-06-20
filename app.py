@@ -63,62 +63,6 @@ if not st.session_state.logged_in:
 role = st.session_state.role
 st.sidebar.markdown(f"**🔒 Current Role:** {role}")
 
-# --- Dark Mode Toggle ---
-dark_mode = st.sidebar.toggle("🌗 Enable Dark Mode", value=False)
-
-if dark_mode:
-    st.markdown("""
-        <style>
-            html, body, [class*="css"] {
-                background-color: #121212 !important;
-                color: #e0e0e0 !important;
-                font-family: 'Roboto', sans-serif;
-            }
-            .stTextInput input, .stSelectbox div, .stDateInput input, .stMultiSelect div, .stFileUploader, .stDownloadButton button {
-                background-color: #2c2c2c !important;
-                color: #ffffff !important;
-                border: none !important;
-            }
-            .element-container .row-widget.stRadio, .stExpanderHeader, .css-1l269bu {
-                background-color: #1e1e1e !important;
-                color: #ffffff !important;
-            }
-            .block-container, .sidebar-content, .css-1avcm0n, .css-1d391kg, .stSidebar, .st-emotion-cache-1dj1jju {
-                background-color: #121212 !important;
-                color: #ffffff !important;
-            }
-            h1, h2, h3, h4, h5, h6, label, p, .css-10trblm {
-                color: #ffffff !important;
-            }
-            .stButton>button, .stDownloadButton button {
-                background-color: #444 !important;
-                color: #fff !important;
-                border-radius: 5px;
-                border: 1px solid #888;
-                padding: 0.5em 1em;
-                font-size: 1em;
-            }
-            .stButton>button:hover, .stDownloadButton button:hover {
-                background-color: #666 !important;
-                color: #fff !important;
-            }
-            .stDataFrame div[data-testid="stTable"] {
-                background-color: #1e1e1e !important;
-                color: #ffffff !important;
-            }
-            .glow-logo {
-                filter: drop-shadow(0 0 10px #00ffaa);
-            }
-        </style>
-    """, unsafe_allow_html=True)
-
-# --- Ghibli Animation Banner ---
-st.markdown("""
-    <div style="text-align:center; margin-bottom: 1rem;">
-        <img src="https://media.giphy.com/media/v1.Y2lkPTc5MGI3NjExMjhjZjl6OHY4cW1zZ2s1ZzZvM2MwZHR3dmJncjR4b2l4em5xZW8xcyZlcD12MV9naWZzX3NlYXJjaCZjdD1n/JIX9t2j0ZTN9S/giphy.gif" width="100" alt="Totoro Animation">
-    </div>
-""", unsafe_allow_html=True)
-
 # --- Fonts & Logo Styling ---
 st.markdown("""
     <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;700&display=swap" rel="stylesheet">
