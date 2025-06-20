@@ -1,127 +1,91 @@
+# Option 1: In-app Admin-only Password Change Feature
+
 import streamlit as st
 import pandas as pd
+import os
 import json
 import hashlib
-import os
 
-# ---------------------- CONFIG ----------------------
+# ------------------- CONFIG -------------------
 CREDENTIALS_FILE = "users.json"
 DEFAULT_USERS = {
-    "admin": {"password": hashlib.sha256("admin123".encode()).hexdigest(), "role": "Admin"},
-    "mod": {"password": hashlib.sha256("mod123".encode()).hexdigest(), "role": "Moderator"}
+    "admin": {"password": "admin123", "role": "Admin"},
+    "mod": {"password": "mod123", "role": "Moderator"}
 }
 
-# ------------------- HELPER FUNCTIONS -------------------
+# ------------------- UTILS -------------------
 def hash_password(password):
     return hashlib.sha256(password.encode()).hexdigest()
 
-def load_credentials():
+def load_users():
     if not os.path.exists(CREDENTIALS_FILE):
-        save_credentials(DEFAULT_USERS)
+        with open(CREDENTIALS_FILE, "w") as f:
+            json.dump({k: {"password": hash_password(v["password"]), "role": v["role"]} 
+                      for k, v in DEFAULT_USERS.items()}, f)
     with open(CREDENTIALS_FILE, "r") as f:
         return json.load(f)
 
-def save_credentials(credentials):
+def save_users(users):
     with open(CREDENTIALS_FILE, "w") as f:
-        json.dump(credentials, f, indent=4)
+        json.dump(users, f, indent=4)
 
-def authenticate(username, password, credentials):
-    if username in credentials:
-        return credentials[username]["password"] == hash_password(password)
-    return False
+users = load_users()
 
 # ------------------- SESSION SETUP -------------------
 if "logged_in" not in st.session_state:
     st.session_state.logged_in = False
     st.session_state.username = ""
-    st.session_state.role = ""
+    st.session_state.role = None
 
-credentials = load_credentials()
-
-# ------------------- LOGIN SCREEN -------------------
+# ------------------- LOGIN -------------------
 if not st.session_state.logged_in:
-    st.set_page_config(page_title="Login | IP Masterlist Dashboard", layout="centered")
+    st.title("🔐 IPRO Dashboard Login")
+    with st.form("login_form"):
+        username = st.text_input("Username")
+        password = st.text_input("Password", type="password")
+        submit = st.form_submit_button("Login")
 
-    st.markdown("""
-        <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;700&display=swap" rel="stylesheet">
-        <style>
-            html, body, [class*="css"] {
-                font-family: 'Roboto', sans-serif;
-            }
-            .glow-logo {
-                width: 80px;
-                display: block;
-                margin-left: auto;
-                margin-right: auto;
-                filter: drop-shadow(0 0 8px #00ffaa);
-                animation: bounce 2s infinite;
-            }
-            @keyframes bounce {
-                0%, 100% { transform: translateY(0); }
-                50% { transform: translateY(-10px); }
-            }
-            h1 {
-                text-align: center;
-                font-size: 2rem;
-                margin-top: 0.5rem;
-            }
-        </style>
-    """, unsafe_allow_html=True)
-
-    st.markdown("""
-        <div style="text-align: center;">
-            <img src="https://raw.githubusercontent.com/iprobsu/IPRO/main/ipro_logo.png" alt="IPRO Logo" class="glow-logo" />
-            <h1>🔐 IP Masterlist Dashboard Login</h1>
-        </div>
-    """, unsafe_allow_html=True)
-
-    username = st.text_input("👤 Username")
-    password = st.text_input("🔑 Password", type="password")
-
-    if st.button("Login"):
-        if authenticate(username, password, credentials):
+    if submit:
+        user = users.get(username)
+        if user and user["password"] == hash_password(password):
             st.session_state.logged_in = True
             st.session_state.username = username
-            st.session_state.role = credentials[username]["role"]
-            st.experimental_rerun()
+            st.session_state.role = user["role"]
+            st.rerun()
         else:
-            st.error("❌ Incorrect username or password.")
+            st.error("❌ Invalid username or password")
     st.stop()
 
-# ------------------- LOGGED IN -------------------
-st.set_page_config(page_title="IP Masterlist Dashboard", layout="wide")
-role = st.session_state.role
-st.sidebar.markdown(f"**🔒 Current Role:** {role}")
-
 # ------------------- MAIN DASHBOARD -------------------
-st.markdown("""
-    <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;700&display=swap" rel="stylesheet">
-    <style>
-        html, body, [class*="css"] {
-            font-family: 'Roboto', sans-serif;
-        }
-        .glow-logo {
-            width: 80px;
-            filter: drop-shadow(0 0 8px #00ffaa);
-            animation: bounce 2s infinite;
-        }
-        @keyframes bounce {
-            0%, 100% { transform: translateY(0); }
-            50% { transform: translateY(-10px); }
-        }
-        h1 {
-            text-align: center;
-            font-size: 2rem;
-            margin-top: 0.5rem;
-        }
-    </style>
-""", unsafe_allow_html=True)
+st.sidebar.markdown(f"**🔒 Logged in as:** `{st.session_state.username}` ({st.session_state.role})")
+logout = st.sidebar.button("🚪 Logout")
+if logout:
+    st.session_state.logged_in = False
+    st.session_state.username = ""
+    st.session_state.role = None
+    st.rerun()
 
-st.markdown("""
-    <div style="text-align: center;">
-        <img src="https://raw.githubusercontent.com/iprobsu/IPRO/main/ipro_logo.png" alt="IPRO Logo" class="glow-logo" />
-        <h1>📚 IP Masterlist Dashboard</h1>
-    </div>
-""", unsafe_allow_html=True)
+st.title("📚 IP Masterlist Dashboard")
 
-st.info(f"Welcome, **{st.session_state.username}**! You are logged in as **{role}**.")
+# ------------------- ADMIN CHANGE PASSWORD -------------------
+if st.session_state.role == "Admin":
+    st.subheader("🔑 Admin: Change a User's Password")
+    with st.form("change_password"):
+        target_user = st.selectbox("Select User", list(users.keys()))
+        new_pw = st.text_input("New Password", type="password")
+        confirm_pw = st.text_input("Confirm Password", type="password")
+        update_btn = st.form_submit_button("Update Password")
+
+    if update_btn:
+        if new_pw != confirm_pw:
+            st.error("❌ Passwords do not match")
+        elif not new_pw.strip():
+            st.error("❌ Password cannot be empty")
+        else:
+            users[target_user]["password"] = hash_password(new_pw)
+            save_users(users)
+            st.success(f"✅ Password for `{target_user}` updated.")
+
+# ------------------- Place your IP dashboard below -------------------
+st.markdown("---")
+st.markdown("🔍 Your dashboard content would continue below here...")
