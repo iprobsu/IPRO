@@ -102,6 +102,10 @@ if dark_mode:
                 background-color: #666 !important;
                 color: #fff !important;
             }
+            .stDataFrame div[data-testid="stTable"] {
+                background-color: #1e1e1e !important;
+                color: #ffffff !important;
+            }
             .glow-logo {
                 filter: drop-shadow(0 0 10px #00ffaa);
             }
@@ -147,5 +151,9 @@ st.markdown("""
     </div>
 """, unsafe_allow_html=True)
 
-# The rest of the original code remains unchanged.
-# (Everything after filters, color customization, table display, download buttons, etc.)
+# --- Example DataFrame ---
+if role:
+    st.markdown("### 📄 Example Table")
+    df = pd.DataFrame({"Author": ["Hayao", "Chihiro"], "IP Type": ["Copyright", "Trademark"]})
+    st.dataframe(df, use_container_width=True)
+    st.download_button("⬇️ Download Sample CSV", df.to_csv(index=False), file_name="sample.csv")
