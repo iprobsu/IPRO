@@ -43,11 +43,11 @@ if not st.session_state.logged_in:
     st.set_page_config(page_title="IP Masterlist Dashboard", layout="wide")
 
     st.sidebar.markdown("### 🔐 Login")
-    username = st.sidebar.text_input("Username")
-    password = st.sidebar.text_input("Enter Password", type="password")
+    username = st.sidebar.text_input("👤 Username")
+    password = st.sidebar.text_input("🔑 Password", type="password")
 
     if password == "" or username == "":
-        st.sidebar.info("🔑 Enter credentials to access Admin features.")
+        st.sidebar.info("ℹ️ Enter credentials to access Admin features.")
         role = "Moderator"
     elif authenticate(username, password, credentials):
         st.session_state.logged_in = True
@@ -90,10 +90,17 @@ if dark_mode:
             h1, h2, h3, h4, h5, h6, label, p, .css-10trblm {
                 color: #ffffff !important;
             }
-            .stButton>button {
-                background-color: #333333 !important;
-                color: #ffffff !important;
-                border: none !important;
+            .stButton>button, .stDownloadButton button {
+                background-color: #444 !important;
+                color: #fff !important;
+                border-radius: 5px;
+                border: 1px solid #888;
+                padding: 0.5em 1em;
+                font-size: 1em;
+            }
+            .stButton>button:hover, .stDownloadButton button:hover {
+                background-color: #666 !important;
+                color: #fff !important;
             }
             .glow-logo {
                 filter: drop-shadow(0 0 10px #00ffaa);
@@ -238,6 +245,7 @@ else:
         st.markdown(styled_df.to_html(escape=False), unsafe_allow_html=True)
     else:
         st.dataframe(display_df, use_container_width=True, height=600)
+
     if role in ["Moderator", "Admin"]:
         csv = display_df.to_csv(index=False).encode("utf-8")
-        st.download_button("⬇️ Download Filtered Results", data=csv, file_name="filtered_ip_data.csv", mime="text/csv")
+        st.download_button("💾 Download Filtered Results", data=csv, file_name="filtered_ip_data.csv", mime="text/csv")
