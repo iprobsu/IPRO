@@ -1,6 +1,7 @@
 import streamlit as st
 import pandas as pd
 import os
+from datetime import datetime
 
 # ---------- PAGE CONFIG ----------
 st.set_page_config(page_title="IP Masterlist Dashboard", layout="wide")
@@ -29,25 +30,27 @@ st.markdown("""
     </style>
 """, unsafe_allow_html=True)
 
-# ---------- SESSION INIT ----------
+# ---------- PASSWORDS (Memory Only) ----------
+if "passwords" not in st.session_state:
+    st.session_state.passwords = {
+        "admin": "admin123",
+        "mod": "mod123"
+    }
+
 if "logged_in" not in st.session_state:
     st.session_state.logged_in = False
     st.session_state.role = None
 
-# ---------- USER AUTH ----------
+# ---------- LOGIN ----------
 def login():
     st.markdown("### 🔐 Login to Access IP Dashboard")
     username = st.text_input("Username")
     password = st.text_input("Password", type="password")
     if st.button("Login"):
-        if username == "admin" and password == "admin123":
+        if username in st.session_state.passwords and st.session_state.passwords[username] == password:
             st.session_state.logged_in = True
-            st.session_state.role = "admin"
-            st.success("Logged in as Admin ✅")
-        elif username == "mod" and password == "mod123":
-            st.session_state.logged_in = True
-            st.session_state.role = "moderator"
-            st.success("Logged in as Moderator ✅")
+            st.session_state.role = "admin" if username == "admin" else "moderator"
+            st.success(f"Logged in as {st.session_state.role.title()} ✅")
         else:
             st.error("Invalid credentials ❌")
 
@@ -76,8 +79,34 @@ def load_data():
         df = df.explode('Author').reset_index(drop=True)
     return df
 
+# ---------- ADMIN TOOLS ----------
+def admin_tools():
+    st.markdown("### 🛠 Admin Tools")
+    st.subheader("🔁 Replace Existing File")
+    file_to_replace = st.selectbox("Select file to replace", [f for f in os.listdir("data") if f.endswith(".xlsx")])
+    new_file = st.file_uploader("Upload new version", type=["xlsx"], key="replace")
+    if new_file and st.button("Replace File"):
+        with open(os.path.join("data", file_to_replace), "wb") as f:
+            f.write(new_file.read())
+        st.success(f"Replaced {file_to_replace}")
+
+    st.subheader("➕ Upload New File")
+    uploaded_file = st.file_uploader("Upload new Excel file", type=["xlsx"], key="upload")
+    if uploaded_file and st.button("Upload File"):
+        save_path = os.path.join("data", uploaded_file.name)
+        with open(save_path, "wb") as f:
+            f.write(uploaded_file.read())
+        st.success(f"Uploaded {uploaded_file.name}")
+
+    st.subheader("🔐 Change Passwords")
+    user_to_change = st.selectbox("Select user", list(st.session_state.passwords.keys()))
+    new_pw = st.text_input("New password", type="password")
+    if st.button("Change Password"):
+        st.session_state.passwords[user_to_change] = new_pw
+        st.success(f"Password updated for {user_to_change}")
+
 # ---------- DASHBOARD ----------
-def show_dashboard():
+def dashboard():
     st.markdown("""
         <div style="text-align: center;">
             <img src="https://raw.githubusercontent.com/iprobsu/IPRO/main/ipro_logo.png" class="glow-logo" />
@@ -106,7 +135,6 @@ def show_dashboard():
         with col6:
             date_range = st.date_input("Filter by Date Applied", [])
 
-    # Filter logic
     filtered_df = df.copy()
     if search_term:
         filtered_df = filtered_df[
@@ -128,7 +156,6 @@ def show_dashboard():
             start, end = pd.to_datetime(date_range[0]), pd.to_datetime(date_range[1])
             filtered_df = filtered_df[filtered_df['Date Applied'].between(start, end)]
 
-    # --- Sidebar Color Highlighting ---
     st.sidebar.markdown("🎨 **Customize Row Colors by IP Type**")
     enable_coloring = st.sidebar.checkbox("Enable Row Coloring")
     ip_color_map = {}
@@ -138,7 +165,6 @@ def show_dashboard():
             ip_color_map[ip] = st.sidebar.color_picker("", "#ffffff", key=f"color_{ip}")
             st.sidebar.markdown(f"<div style='margin-top:-25px; margin-bottom:10px;'>{ip}</div>", unsafe_allow_html=True)
 
-    # --- Results ---
     if filtered_df.empty:
         st.warning("😕 No records matched your filters or search term.")
     else:
@@ -155,8 +181,12 @@ def show_dashboard():
         else:
             st.dataframe(display_df, use_container_width=True, height=600)
 
-# ---------- MAIN ROUTER ----------
+    if st.session_state.role == "admin":
+        st.divider()
+        admin_tools()
+
+# ---------- MAIN ----------
 if not st.session_state.logged_in:
     login()
 else:
-    show_dashboard()
+    dashboard()
