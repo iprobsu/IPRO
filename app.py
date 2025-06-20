@@ -74,20 +74,20 @@ if dark_mode:
                 color: #e0e0e0 !important;
                 font-family: 'Roboto', sans-serif;
             }
-            .stTextInput input, .stSelectbox div, .stDateInput input, .stMultiSelect div {
+            .stTextInput input, .stSelectbox div, .stDateInput input, .stMultiSelect div, .stFileUploader, .stDownloadButton button {
                 background-color: #2c2c2c !important;
                 color: #ffffff !important;
                 border: none !important;
             }
-            .stDataFrame, .stTable {
+            .stDataFrame, .stTable, .element-container .row-widget.stRadio, .stExpanderHeader {
                 background-color: #1e1e1e !important;
                 color: #ffffff !important;
             }
-            .block-container, .sidebar-content, .css-1avcm0n, .css-1d391kg {
+            .block-container, .sidebar-content, .css-1avcm0n, .css-1d391kg, .stSidebar {
                 background-color: #121212 !important;
                 color: #ffffff !important;
             }
-            h1, h2, h3, h4, h5, h6 {
+            h1, h2, h3, h4, h5, h6, label, p, .css-10trblm {
                 color: #ffffff !important;
             }
             .stButton>button {
