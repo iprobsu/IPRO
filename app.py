@@ -5,30 +5,54 @@ import os
 # --- Page Setup ---
 st.set_page_config(page_title="IP Masterlist Dashboard", layout="wide")
 
-# --- Login (Password-Based) ---
-st.sidebar.markdown("### 🔐 Login")
+# --- Session State Setup ---
+if "logged_in" not in st.session_state:
+    st.session_state.logged_in = False
+if "role" not in st.session_state:
+    st.session_state.role = None
 
-password = st.sidebar.text_input("Enter Admin Password", type="password")
-role = None
+# --- Login Page ---
+if not st.session_state.logged_in:
+    st.markdown("""
+        <style>
+            .login-box {
+                max-width: 400px;
+                margin: 100px auto;
+                padding: 40px;
+                border-radius: 10px;
+                background-color: #f9f9f9;
+                box-shadow: 0px 0px 10px rgba(0,0,0,0.1);
+            }
+            .login-box h2 {
+                text-align: center;
+                margin-bottom: 30px;
+            }
+        </style>
+        <div class="login-box">
+            <h2>🔐 IPRO Dashboard Login</h2>
+        </div>
+    """, unsafe_allow_html=True)
 
-if password == "":
-    st.sidebar.info("🔑 Enter password to access Admin features.")
-    role = "Moderator"
-elif password == "admin123":
-    st.sidebar.success("🛠 Welcome, Admin! You can now upload new Excel files.")
-    role = "Admin"
-else:
-    st.sidebar.error("❌ Incorrect password. You are in Moderator (view-only) mode.")
-    role = "Moderator"
+    with st.form("login_form"):
+        username = st.text_input("Username")
+        password = st.text_input("Password", type="password")
+        submitted = st.form_submit_button("Login")
 
-st.sidebar.markdown(f"**🔒 Current Role:** {role}")
-
-# --- Block Access Unless Logged In ---
-if role == "Moderator" and password == "":
-    st.warning("🚫 Access denied. Please enter a valid password to access the dashboard.")
+        if submitted:
+            if username == "admin" and password == "admin123":
+                st.session_state.logged_in = True
+                st.session_state.role = "Admin"
+                st.rerun()
+            elif username == "mod" and password == "mod123":
+                st.session_state.logged_in = True
+                st.session_state.role = "Moderator"
+                st.rerun()
+            else:
+                st.error("❌ Invalid username or password")
     st.stop()
 
-# --- Dark Mode Toggle ---
+# --- Sidebar ---
+st.sidebar.markdown(f"**🔒 Current Role:** {st.session_state.role}")
 dark_mode = st.sidebar.toggle("🌗 Enable Dark Mode", value=False)
 
 # --- Apply Dark Mode Styling ---
@@ -40,63 +64,21 @@ if dark_mode:
                 color: #e0e0e0 !important;
                 font-family: 'Roboto', sans-serif;
             }
-            .stTextInput input, .stSelectbox div, .stDateInput input, .stMultiSelect div {
-                background-color: #2c2c2c !important;
-                color: #ffffff !important;
-                border: none !important;
-            }
-            .stDataFrame, .stTable {
-                background-color: #1e1e1e !important;
-                color: #ffffff !important;
-            }
-            .block-container, .sidebar-content, .css-1avcm0n, .css-1d391kg {
-                background-color: #121212 !important;
-                color: #ffffff !important;
-            }
-            h1, h2, h3, h4, h5, h6 {
-                color: #ffffff !important;
-            }
-            .stButton>button {
-                background-color: #333333 !important;
-                color: #ffffff !important;
-                border: none !important;
-            }
-            .glow-logo {
-                filter: drop-shadow(0 0 10px #00ffaa);
-            }
         </style>
     """, unsafe_allow_html=True)
-
-# --- Fonts & Logo Styling ---
-st.markdown("""
-    <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;700&display=swap" rel="stylesheet">
-    <style>
-        html, body, [class*="css"] {
-            font-family: 'Roboto', sans-serif;
-        }
-        .glow-logo {
-            width: 80px;
-            filter: drop-shadow(0 0 8px #00ffaa);
-            animation: bounce 2s infinite;
-        }
-        @keyframes bounce {
-            0%, 100% { transform: translateY(0); }
-            50% { transform: translateY(-10px); }
-        }
-        h1 {
-            text-align: center;
-            font-size: 2rem;
-            margin-top: 0.5rem;
-        }
-    </style>
-""", unsafe_allow_html=True)
 
 # --- Logo and Title ---
 st.markdown("""
     <div style="text-align: center;">
-        <img src="https://raw.githubusercontent.com/iprobsu/IPRO/main/ipro_logo.png" alt="IPRO Logo" class="glow-logo" />
+        <img src="https://raw.githubusercontent.com/iprobsu/IPRO/main/ipro_logo.png" alt="IPRO Logo" width="80" style="filter: drop-shadow(0 0 10px #00ffaa); animation: bounce 2s infinite;" />
         <h1>📚 IP Masterlist Dashboard</h1>
     </div>
+    <style>
+        @keyframes bounce {
+            0%, 100% { transform: translateY(0); }
+            50% { transform: translateY(-10px); }
+        }
+    </style>
 """, unsafe_allow_html=True)
 
 # --- Load Data ---
@@ -126,7 +108,7 @@ def load_data():
 df = load_data()
 
 # --- Admin: Upload new data ---
-if role == "Admin":
+if st.session_state.role == "Admin":
     st.sidebar.markdown("### 📤 Upload New Excel File")
     uploaded_file = st.sidebar.file_uploader("Upload Excel", type=["xlsx"])
     if uploaded_file:
@@ -136,7 +118,6 @@ if role == "Admin":
 
 # --- Filters ---
 st.markdown("### 🔍 Search Intellectual Property Records")
-
 col1, col2, col3 = st.columns([3, 2, 2])
 with col1:
     search_term = st.text_input("Search by Author or Title")
@@ -178,9 +159,7 @@ if date_range:
         filtered_df = filtered_df[filtered_df['Date Applied'].between(start, end)]
 
 # --- Row Color Customization ---
-st.sidebar.markdown("### 🎛️ Row Colors by IP Type")
 show_colors = st.sidebar.toggle("🎨 Customize Row Colors", value=False)
-
 ip_color_map = {}
 enable_coloring = False
 
@@ -215,7 +194,6 @@ else:
     else:
         st.dataframe(display_df, use_container_width=True, height=600)
 
-    # --- Moderator & Admin: Download filtered data ---
-    if role in ["Moderator", "Admin"]:
+    if st.session_state.role in ["Moderator", "Admin"]:
         csv = display_df.to_csv(index=False).encode("utf-8")
         st.download_button("⬇️ Download Filtered Results", data=csv, file_name="filtered_ip_data.csv", mime="text/csv")
