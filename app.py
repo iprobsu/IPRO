@@ -88,27 +88,23 @@ def load_data():
 # ---------- ADMIN TOOLS ----------
 def admin_tools_sidebar():
     st.sidebar.markdown("### 🛠 Admin Tools")
+
     st.sidebar.subheader("🔁 Replace Existing File")
-    file_to_replace = st.sidebar.selectbox("Select file to replace", [f for f in os.listdir("data") if f.endswith(".xlsx")])
+    file_to_replace = st.sidebar.selectbox("Select file to replace", [f for f in os.listdir("data") if f.endswith(".xlsx")], key="replace_select")
     new_file = st.sidebar.file_uploader("Upload new version", type=["xlsx"], key="replace")
     if new_file and st.sidebar.button("Replace File"):
         with open(os.path.join("data", file_to_replace), "wb") as f:
             f.write(new_file.read())
         st.sidebar.success(f"Replaced {file_to_replace}")
 
-    st.sidebar.subheader("➕ Upload New File")
-    uploaded_file = st.sidebar.file_uploader("Upload new Excel file", type=["xlsx"], key="upload")
-    if uploaded_file and st.sidebar.button("Upload File"):
-        save_path = os.path.join("data", uploaded_file.name)
-        with open(save_path, "wb") as f:
-            f.write(uploaded_file.read())
-        st.sidebar.success(f"Uploaded {uploaded_file.name}")
-
     st.sidebar.subheader("🗑️ Delete File")
     file_to_delete = st.sidebar.selectbox("Select file to delete", [f for f in os.listdir("data") if f.endswith(".xlsx")], key="delete_select")
     if st.sidebar.button("Delete File"):
-        os.remove(os.path.join("data", file_to_delete))
-        st.sidebar.success(f"Deleted {file_to_delete}")
+        try:
+            os.remove(os.path.join("data", file_to_delete))
+            st.sidebar.success(f"Deleted {file_to_delete}")
+        except Exception as e:
+            st.sidebar.error(f"Error deleting file: {e}")
 
     st.sidebar.subheader("🔐 Change Passwords")
     user_to_change = st.sidebar.selectbox("Select user", list(st.session_state.passwords.keys()))
