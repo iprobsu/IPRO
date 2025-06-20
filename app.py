@@ -79,7 +79,7 @@ if dark_mode:
                 color: #ffffff !important;
                 border: none !important;
             }
-            .stDataFrame, .stTable, .element-container .row-widget.stRadio, .stExpanderHeader, .css-1l269bu {
+            .element-container .row-widget.stRadio, .stExpanderHeader, .css-1l269bu {
                 background-color: #1e1e1e !important;
                 color: #ffffff !important;
             }
@@ -152,6 +152,8 @@ def load_data():
                 df["IP Type"] = sheet_name
                 df["Source File"] = filename
                 all_data.append(df)
+    if not all_data:
+        return pd.DataFrame()
     df = pd.concat(all_data, ignore_index=True)
     df['Date Applied'] = pd.to_datetime(df.get('Date Applied', pd.NaT), errors='coerce')
     df['Date Approved'] = pd.to_datetime(df.get('Date Approved', pd.NaT), errors='coerce')
@@ -179,16 +181,16 @@ col1, col2, col3 = st.columns([3, 2, 2])
 with col1:
     search_term = st.text_input("Search by Author or Title")
 with col2:
-    ip_type = st.selectbox("Filter by IP Type", ["All"] + sorted(df['IP Type'].unique()))
+    ip_type = st.selectbox("Filter by IP Type", ["All"] + sorted(df['IP Type'].unique()) if not df.empty else ["All"])
 with col3:
-    year = st.selectbox("Sort by Year", ["All"] + sorted(df['Year'].unique()))
+    year = st.selectbox("Sort by Year", ["All"] + sorted(df['Year'].unique()) if not df.empty else ["All"])
 
 with st.expander("📂 Advanced Filters"):
     col4, col5, col6 = st.columns(3)
     with col4:
-        college = st.selectbox("Filter by College", ["All"] + sorted(df['College'].unique()) if 'College' in df else ["All"])
+        college = st.selectbox("Filter by College", ["All"] + sorted(df['College'].unique()) if 'College' in df.columns else ["All"])
     with col5:
-        campus = st.selectbox("Filter by Campus", ["All"] + sorted(df['Campus'].unique()) if 'Campus' in df else ["All"])
+        campus = st.selectbox("Filter by Campus", ["All"] + sorted(df['Campus'].unique()) if 'Campus' in df.columns else ["All"])
     with col6:
         date_range = st.date_input("Filter by Date Applied", [])
 
