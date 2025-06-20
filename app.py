@@ -101,7 +101,8 @@ if not st.session_state.logged_in:
             st.session_state.logged_in = True
             st.session_state.username = username
             st.session_state.role = credentials[username]["role"]
-            st.experimental_rerun()
+            st.success("✅ Login successful! Loading dashboard...")
+            st.stop()
         else:
             st.error("❌ Incorrect username or password.")
     st.stop()
