@@ -94,7 +94,34 @@ role = st.session_state.role
 st.sidebar.markdown(f"**🔒 Current Role:** {role}")
 
 # ------------------- MAIN DASHBOARD -------------------
-# Add your main dashboard code here.
-# Example placeholder:
-st.title("📚 IP Masterlist Dashboard")
+st.markdown("""
+    <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;700&display=swap" rel="stylesheet">
+    <style>
+        html, body, [class*="css"] {
+            font-family: 'Roboto', sans-serif;
+        }
+        .glow-logo {
+            width: 80px;
+            filter: drop-shadow(0 0 8px #00ffaa);
+            animation: bounce 2s infinite;
+        }
+        @keyframes bounce {
+            0%, 100% { transform: translateY(0); }
+            50% { transform: translateY(-10px); }
+        }
+        h1 {
+            text-align: center;
+            font-size: 2rem;
+            margin-top: 0.5rem;
+        }
+    </style>
+""", unsafe_allow_html=True)
+
+st.markdown("""
+    <div style="text-align: center;">
+        <img src="https://raw.githubusercontent.com/iprobsu/IPRO/main/ipro_logo.png" alt="IPRO Logo" class="glow-logo" />
+        <h1>📚 IP Masterlist Dashboard</h1>
+    </div>
+""", unsafe_allow_html=True)
+
 st.info(f"Welcome, **{st.session_state.username}**! You are logged in as **{role}**.")
