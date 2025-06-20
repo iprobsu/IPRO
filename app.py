@@ -1,20 +1,71 @@
 import streamlit as st
 import pandas as pd
+import json
+import hashlib
 import os
 
-# --- Page Setup ---
-st.set_page_config(page_title="IP Masterlist Dashboard", layout="wide")
+# ---------------------- CONFIG ----------------------
+CREDENTIALS_FILE = "users.json"
+DEFAULT_USERS = {
+    "admin": {"password": hashlib.sha256("admin123".encode()).hexdigest(), "role": "Admin"},
+    "mod": {"password": hashlib.sha256("mod123".encode()).hexdigest(), "role": "Moderator"}
+}
 
-# --- Login (Password-Based) ---
-st.sidebar.markdown("### 🔐 Login")
-password = st.sidebar.text_input("Enter Admin Password", type="password")
-role = "Admin" if password == "admin123" else "Moderator"
-st.sidebar.markdown(f"**Logged in as:** {role}")
+# ------------------- HELPER FUNCTIONS -------------------
+def hash_password(password):
+    return hashlib.sha256(password.encode()).hexdigest()
+
+def load_credentials():
+    if not os.path.exists(CREDENTIALS_FILE):
+        save_credentials(DEFAULT_USERS)
+    with open(CREDENTIALS_FILE, "r") as f:
+        return json.load(f)
+
+def save_credentials(credentials):
+    with open(CREDENTIALS_FILE, "w") as f:
+        json.dump(credentials, f, indent=4)
+
+def authenticate(username, password, credentials):
+    if username in credentials:
+        return credentials[username]["password"] == hash_password(password)
+    return False
+
+# ------------------- SESSION SETUP -------------------
+if "logged_in" not in st.session_state:
+    st.session_state.logged_in = False
+    st.session_state.username = ""
+    st.session_state.role = ""
+
+credentials = load_credentials()
+
+# ------------------- LOGIN PAGE -------------------
+if not st.session_state.logged_in:
+    st.set_page_config(page_title="IP Masterlist Dashboard", layout="wide")
+
+    st.sidebar.markdown("### 🔐 Login")
+    username = st.sidebar.text_input("Username")
+    password = st.sidebar.text_input("Enter Password", type="password")
+
+    if password == "" or username == "":
+        st.sidebar.info("🔑 Enter credentials to access Admin features.")
+        role = "Moderator"
+    elif authenticate(username, password, credentials):
+        st.session_state.logged_in = True
+        st.session_state.username = username
+        st.session_state.role = credentials[username]["role"]
+        st.experimental_rerun()
+    else:
+        st.sidebar.error("❌ Incorrect credentials. You are in Moderator (view-only) mode.")
+        st.session_state.role = "Moderator"
+        st.stop()
+
+# ------------------- LOGGED IN -------------------
+role = st.session_state.role
+st.sidebar.markdown(f"**🔒 Current Role:** {role}")
 
 # --- Dark Mode Toggle ---
 dark_mode = st.sidebar.toggle("🌗 Enable Dark Mode", value=False)
 
-# --- Apply Dark Mode Styling ---
 if dark_mode:
     st.markdown("""
         <style>
@@ -50,7 +101,6 @@ if dark_mode:
         </style>
     """, unsafe_allow_html=True)
 
-# --- Fonts & Logo Styling ---
 st.markdown("""
     <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;700&display=swap" rel="stylesheet">
     <style>
@@ -74,7 +124,6 @@ st.markdown("""
     </style>
 """, unsafe_allow_html=True)
 
-# --- Logo and Title ---
 st.markdown("""
     <div style="text-align: center;">
         <img src="https://raw.githubusercontent.com/iprobsu/IPRO/main/ipro_logo.png" alt="IPRO Logo" class="glow-logo" />
@@ -119,7 +168,6 @@ if role == "Admin":
 
 # --- Filters ---
 st.markdown("### 🔍 Search Intellectual Property Records")
-
 col1, col2, col3 = st.columns([3, 2, 2])
 with col1:
     search_term = st.text_input("Search by Author or Title")
@@ -128,7 +176,6 @@ with col2:
 with col3:
     year = st.selectbox("Sort by Year", ["All"] + sorted(df['Year'].unique()))
 
-# --- Advanced Filters ---
 with st.expander("📂 Advanced Filters"):
     col4, col5, col6 = st.columns(3)
     with col4:
@@ -138,7 +185,6 @@ with st.expander("📂 Advanced Filters"):
     with col6:
         date_range = st.date_input("Filter by Date Applied", [])
 
-# --- Apply Filters ---
 filtered_df = df.copy()
 if search_term:
     filtered_df = filtered_df[
@@ -163,10 +209,8 @@ if date_range:
 # --- Row Color Customization ---
 st.sidebar.markdown("### 🎛️ Row Colors by IP Type")
 show_colors = st.sidebar.toggle("🎨 Customize Row Colors", value=False)
-
 ip_color_map = {}
 enable_coloring = False
-
 if show_colors:
     enable_coloring = st.sidebar.checkbox("Enable Row Coloring", value=True)
     if 'IP Type' in filtered_df.columns:
@@ -184,22 +228,16 @@ if filtered_df.empty:
 else:
     display_df = filtered_df.dropna(axis=1, how='all')
     display_df = display_df.loc[:, ~(display_df == '').all()]
-
     st.markdown(f"### 📄 Showing {len(display_df)} result{'s' if len(display_df) != 1 else ''}")
-
     if enable_coloring and ip_color_map:
         def apply_color(row):
             bg = ip_color_map.get(row['IP Type'], '#ffffff')
             text_color = '#ffffff' if dark_mode else '#000000'
             return [f'background-color: {bg}; color: {text_color}'] * len(row)
-
         styled_df = display_df.style.apply(apply_color, axis=1)
         st.markdown(styled_df.to_html(escape=False), unsafe_allow_html=True)
     else:
         st.dataframe(display_df, use_container_width=True, height=600)
-
-    # --- Moderator: Download filtered data ---
-    if role == "Moderator" or role == "Admin":
+    if role in ["Moderator", "Admin"]:
         csv = display_df.to_csv(index=False).encode("utf-8")
         st.download_button("⬇️ Download Filtered Results", data=csv, file_name="filtered_ip_data.csv", mime="text/csv")
-
