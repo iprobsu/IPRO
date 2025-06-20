@@ -1,81 +1,115 @@
 import streamlit as st
 import pandas as pd
 import os
+from datetime import datetime
 
-# --- Page Setup ---
-st.set_page_config(page_title="IP Masterlist Dashboard", layout="wide")
+# --- User Database (Temporary in Memory) ---
+if "user_db" not in st.session_state:
+    st.session_state.user_db = {
+        "admin": {"password": "admin123", "role": "Admin"},
+        "mod": {"password": "mod123", "role": "Moderator"}
+    }
 
 # --- Session State Setup ---
 if "logged_in" not in st.session_state:
     st.session_state.logged_in = False
 if "role" not in st.session_state:
     st.session_state.role = None
+if "username" not in st.session_state:
+    st.session_state.username = ""
 
-# --- Login Page ---
+# --- Custom Styles ---
+st.markdown("""
+    <style>
+        .login-container {
+            max-width: 400px;
+            margin: auto;
+            margin-top: 10vh;
+            padding: 2rem;
+            border-radius: 15px;
+            background-color: #f5f6f7;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.2);
+            font-family: 'Segoe UI', sans-serif;
+        }
+        .logo {
+            text-align: center;
+            margin-bottom: 1rem;
+        }
+        .logo img {
+            width: 80px;
+        }
+        .logo h2 {
+            color: #1877f2;
+            margin: 0.5rem 0;
+        }
+        .footer-text {
+            font-size: 0.85rem;
+            text-align: center;
+            color: #777;
+            margin-top: 1rem;
+        }
+    </style>
+""", unsafe_allow_html=True)
+
+# --- Login/Register Page ---
 if not st.session_state.logged_in:
-    st.markdown("""
-        <style>
-            .login-box {
-                max-width: 400px;
-                margin: 100px auto;
-                padding: 40px;
-                border-radius: 10px;
-                background-color: #f9f9f9;
-                box-shadow: 0px 0px 10px rgba(0,0,0,0.1);
-            }
-            .login-box h2 {
-                text-align: center;
-                margin-bottom: 30px;
-            }
-        </style>
-        <div class="login-box">
-            <h2>🔐 IPRO Dashboard Login</h2>
-        </div>
-    """, unsafe_allow_html=True)
+    with st.container():
+        st.markdown('<div class="login-container">', unsafe_allow_html=True)
+        st.markdown('<div class="logo">'
+                    '<img src="https://raw.githubusercontent.com/iprobsu/IPRO/main/ipro_logo.png" />'
+                    '<h2>IPRO Dashboard Login</h2>'
+                    '</div>', unsafe_allow_html=True)
 
-    with st.form("login_form"):
-        username = st.text_input("Username")
-        password = st.text_input("Password", type="password")
-        submitted = st.form_submit_button("Login")
+        tab1, tab2 = st.tabs(["🔐 Login", "📝 Create Account"])
 
-        if submitted:
-            if username == "admin" and password == "admin123":
-                st.session_state.logged_in = True
-                st.session_state.role = "Admin"
-                st.rerun()
-            elif username == "mod" and password == "mod123":
-                st.session_state.logged_in = True
-                st.session_state.role = "Moderator"
-                st.rerun()
-            else:
-                st.error("❌ Invalid username or password")
+        with tab1:
+            username = st.text_input("Username", key="login_user")
+            password = st.text_input("Password", type="password", key="login_pass")
+            if st.button("Login"):
+                user_db = st.session_state.user_db
+                if username in user_db and user_db[username]["password"] == password:
+                    st.session_state.logged_in = True
+                    st.session_state.role = user_db[username]["role"]
+                    st.session_state.username = username
+                    st.experimental_rerun()
+                else:
+                    st.error("❌ Invalid username or password")
+
+        with tab2:
+            new_user = st.text_input("New Username", key="new_user")
+            new_pass = st.text_input("New Password", type="password", key="new_pass")
+            role = st.selectbox("Select Role", ["Moderator", "Admin"], key="new_role")
+            if st.button("Create Account"):
+                if new_user in st.session_state.user_db:
+                    st.warning("🚫 Username already exists.")
+                else:
+                    st.session_state.user_db[new_user] = {"password": new_pass, "role": role}
+                    st.success("✅ Account created. You can now log in.")
+
+        st.markdown('<div class="footer-text">Not affiliated with Facebook, just vibing.</div>', unsafe_allow_html=True)
+        st.markdown('</div>', unsafe_allow_html=True)
     st.stop()
 
+# --- Dashboard Code Starts Here ---
+st.sidebar.markdown(f"**👤 Logged in as:** `{st.session_state.username}`  ")
+st.sidebar.markdown(f"**🔒 Role:** `{st.session_state.role}`")
 
-# --- Apply Dark Mode Styling ---
+dark_mode = st.sidebar.toggle("🌗 Enable Dark Mode", value=False)
 if dark_mode:
     st.markdown("""
         <style>
             html, body, [class*="css"] {
                 background-color: #121212 !important;
                 color: #e0e0e0 !important;
-                font-family: 'Roboto', sans-serif;
             }
         </style>
     """, unsafe_allow_html=True)
 
-# --- Logo and Title ---
 st.markdown("""
     <div style="text-align: center;">
-        <img src="https://raw.githubusercontent.com/iprobsu/IPRO/main/ipro_logo.png" alt="IPRO Logo" width="80" style="filter: drop-shadow(0 0 10px #00ffaa); animation: bounce 2s infinite;" />
+        <img src="https://raw.githubusercontent.com/iprobsu/IPRO/main/ipro_logo.png" alt="IPRO Logo" style="width: 80px;" />
         <h1>📚 IP Masterlist Dashboard</h1>
     </div>
-    <style>
-        @keyframes bounce {
-            0%, 100% { transform: translateY(0); }
-            50% { transform: translateY(-10px); }
-        }
-    </style>
 """, unsafe_allow_html=True)
 
 # --- Load Data ---
@@ -123,7 +157,6 @@ with col2:
 with col3:
     year = st.selectbox("Sort by Year", ["All"] + sorted(df['Year'].unique()))
 
-# --- Advanced Filters ---
 with st.expander("📂 Advanced Filters"):
     col4, col5, col6 = st.columns(3)
     with col4:
@@ -155,22 +188,6 @@ if date_range:
         start, end = pd.to_datetime(date_range[0]), pd.to_datetime(date_range[1])
         filtered_df = filtered_df[filtered_df['Date Applied'].between(start, end)]
 
-# --- Row Color Customization ---
-show_colors = st.sidebar.toggle("🎨 Customize Row Colors", value=False)
-ip_color_map = {}
-enable_coloring = False
-
-if show_colors:
-    enable_coloring = st.sidebar.checkbox("Enable Row Coloring", value=True)
-    if 'IP Type' in filtered_df.columns:
-        ip_types = sorted(filtered_df['IP Type'].dropna().unique())
-        for ip in ip_types:
-            col1, col2 = st.sidebar.columns([1, 4])
-            with col1:
-                ip_color_map[ip] = st.color_picker("", "#ffffff", key=f"color_{ip}")
-            with col2:
-                st.sidebar.markdown(f"<div style='margin-top: 8px'>{ip}</div>", unsafe_allow_html=True)
-
 # --- Display Results ---
 if filtered_df.empty:
     st.warning("😕 No records matched your filters or search term.")
@@ -179,18 +196,9 @@ else:
     display_df = display_df.loc[:, ~(display_df == '').all()]
 
     st.markdown(f"### 📄 Showing {len(display_df)} result{'s' if len(display_df) != 1 else ''}")
+    st.dataframe(display_df, use_container_width=True, height=600)
 
-    if enable_coloring and ip_color_map:
-        def apply_color(row):
-            bg = ip_color_map.get(row['IP Type'], '#ffffff')
-            text_color = '#ffffff' if dark_mode else '#000000'
-            return [f'background-color: {bg}; color: {text_color}'] * len(row)
-
-        styled_df = display_df.style.apply(apply_color, axis=1)
-        st.markdown(styled_df.to_html(escape=False), unsafe_allow_html=True)
-    else:
-        st.dataframe(display_df, use_container_width=True, height=600)
-
+    # --- Moderator & Admin: Download filtered data ---
     if st.session_state.role in ["Moderator", "Admin"]:
         csv = display_df.to_csv(index=False).encode("utf-8")
         st.download_button("⬇️ Download Filtered Results", data=csv, file_name="filtered_ip_data.csv", mime="text/csv")
