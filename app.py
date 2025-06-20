@@ -18,8 +18,8 @@ def hash_password(password):
 def load_users():
     if not os.path.exists(CREDENTIALS_FILE):
         with open(CREDENTIALS_FILE, "w") as f:
-            json.dump({k: {"password": hash_password(v["password"]), "role": v["role"]} 
-                      for k, v in DEFAULT_USERS.items()}, f)
+            json.dump({k: {"password": hash_password(v["password"]), "role": v["role"]}
+                       for k, v in DEFAULT_USERS.items()}, f)
     with open(CREDENTIALS_FILE, "r") as f:
         return json.load(f)
 
@@ -54,8 +54,9 @@ if not st.session_state.logged_in:
             st.error("❌ Invalid username or password")
     st.stop()
 
-# ------------------- SIDEBAR -------------------
+# ------------------- SIDEBAR NAVIGATION -------------------
 st.sidebar.markdown(f"**🔒 Logged in as:** `{st.session_state.username}` ({st.session_state.role})")
+navigation = st.sidebar.radio("📁 Menu", ["📊 Dashboard", "⚙️ Settings"])
 logout = st.sidebar.button("🚪 Logout")
 if logout:
     st.session_state.logged_in = False
@@ -63,10 +64,21 @@ if logout:
     st.session_state.role = None
     st.rerun()
 
-# ------------------- ADMIN PASSWORD CHANGE IN SIDEBAR -------------------
-if st.session_state.role == "Admin":
-    with st.sidebar.expander("🔑 Admin: Change User Password", expanded=False):
-        st.markdown("Change the password for any user below:")
+# ------------------- MAIN CONTENT -------------------
+if navigation == "📊 Dashboard":
+    st.title("📚 IP Masterlist Dashboard")
+    st.markdown("---")
+    st.markdown("🔍 Your dashboard content would continue below here...")
+
+    # Dummy dashboard search content for now
+    search_query = st.text_input("Search by Author or Keyword")
+    st.write(f"Results for: `{search_query}`")
+    # Place your real dashboard logic here
+
+elif navigation == "⚙️ Settings":
+    st.title("⚙️ Settings")
+    if st.session_state.role == "Admin":
+        st.subheader("🔑 Change a User's Password")
         with st.form("change_password"):
             target_user = st.selectbox("Select User", list(users.keys()))
             new_pw = st.text_input("New Password", type="password")
@@ -82,9 +94,5 @@ if st.session_state.role == "Admin":
                 users[target_user]["password"] = hash_password(new_pw)
                 save_users(users)
                 st.success(f"✅ Password for `{target_user}` updated.")
-
-# ------------------- MAIN DASHBOARD -------------------
-st.title("📚 IP Masterlist Dashboard")
-
-st.markdown("---")
-st.markdown("🔍 Your dashboard content would continue below here...")
+    else:
+        st.warning("⚠️ Only Admins can access settings.")
