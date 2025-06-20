@@ -1,5 +1,3 @@
-# Option 1: In-app Admin-only Password Change Feature
-
 import streamlit as st
 import pandas as pd
 import os
@@ -56,7 +54,7 @@ if not st.session_state.logged_in:
             st.error("❌ Invalid username or password")
     st.stop()
 
-# ------------------- MAIN DASHBOARD -------------------
+# ------------------- SIDEBAR -------------------
 st.sidebar.markdown(f"**🔒 Logged in as:** `{st.session_state.username}` ({st.session_state.role})")
 logout = st.sidebar.button("🚪 Logout")
 if logout:
@@ -65,27 +63,28 @@ if logout:
     st.session_state.role = None
     st.rerun()
 
+# ------------------- ADMIN PASSWORD CHANGE IN SIDEBAR -------------------
+if st.session_state.role == "Admin":
+    with st.sidebar.expander("🔑 Admin: Change User Password", expanded=False):
+        st.markdown("Change the password for any user below:")
+        with st.form("change_password"):
+            target_user = st.selectbox("Select User", list(users.keys()))
+            new_pw = st.text_input("New Password", type="password")
+            confirm_pw = st.text_input("Confirm Password", type="password")
+            update_btn = st.form_submit_button("Update Password")
+
+        if update_btn:
+            if new_pw != confirm_pw:
+                st.error("❌ Passwords do not match")
+            elif not new_pw.strip():
+                st.error("❌ Password cannot be empty")
+            else:
+                users[target_user]["password"] = hash_password(new_pw)
+                save_users(users)
+                st.success(f"✅ Password for `{target_user}` updated.")
+
+# ------------------- MAIN DASHBOARD -------------------
 st.title("📚 IP Masterlist Dashboard")
 
-# ------------------- ADMIN CHANGE PASSWORD -------------------
-if st.session_state.role == "Admin":
-    st.subheader("🔑 Admin: Change a User's Password")
-    with st.form("change_password"):
-        target_user = st.selectbox("Select User", list(users.keys()))
-        new_pw = st.text_input("New Password", type="password")
-        confirm_pw = st.text_input("Confirm Password", type="password")
-        update_btn = st.form_submit_button("Update Password")
-
-    if update_btn:
-        if new_pw != confirm_pw:
-            st.error("❌ Passwords do not match")
-        elif not new_pw.strip():
-            st.error("❌ Password cannot be empty")
-        else:
-            users[target_user]["password"] = hash_password(new_pw)
-            save_users(users)
-            st.success(f"✅ Password for `{target_user}` updated.")
-
-# ------------------- Place your IP dashboard below -------------------
 st.markdown("---")
 st.markdown("🔍 Your dashboard content would continue below here...")
