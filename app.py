@@ -37,7 +37,6 @@ def change_password(username, old_pw, new_pw, credentials):
         return True
     return False
 
-# ------------------- RESET USERS (OPTIONAL) -------------------
 def reset_users():
     if os.path.exists(CREDENTIALS_FILE):
         os.remove(CREDENTIALS_FILE)
@@ -52,7 +51,6 @@ if "logged_in" not in st.session_state:
 # ------------------- LOGIN SCREEN -------------------
 if not st.session_state.logged_in:
     st.set_page_config(page_title="Login | IP Masterlist Dashboard", layout="centered")
-
     credentials = load_credentials()
 
     st.markdown("""
@@ -91,26 +89,18 @@ if not st.session_state.logged_in:
     username = st.text_input("👤 Username")
     password = st.text_input("🔑 Password", type="password")
 
-    col1, col2 = st.columns([1, 1])
-    with col1:
-        login_btn = st.button("Login")
-    with col2:
-        reset_btn = st.button("🔁 Reset to Default Users")
-
-    if reset_btn:
-        reset_users()
-        st.success("Users reset to default! Try logging in again.")
-        st.stop()
-
-    if login_btn:
+    if st.button("Login"):
         if authenticate(username, password, credentials):
             st.session_state.logged_in = True
             st.session_state.username = username
             st.session_state.role = credentials[username]["role"]
-            st.success("✅ Login successful! Loading dashboard...")
-            st.stop()
+            st.experimental_rerun()
         else:
             st.error("❌ Incorrect username or password.")
+
+    if st.button("🔁 Reset to Default Users"):
+        reset_users()
+        st.success("Users reset to default! Try logging in again.")
     st.stop()
 
 # ------------------- LOGGED IN -------------------
