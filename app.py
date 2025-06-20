@@ -37,11 +37,22 @@ def change_password(username, old_pw, new_pw, credentials):
         return True
     return False
 
+# ------------------- RESET USERS (OPTIONAL) -------------------
+def reset_users():
+    if os.path.exists(CREDENTIALS_FILE):
+        os.remove(CREDENTIALS_FILE)
+    save_credentials(DEFAULT_USERS)
+
 # ------------------- SESSION SETUP -------------------
 if "logged_in" not in st.session_state:
     st.session_state.logged_in = False
     st.session_state.username = ""
     st.session_state.role = ""
+
+# Reset button in sidebar
+if st.sidebar.button("🔁 Reset to Default Users"):
+    reset_users()
+    st.success("Users reset to default! Try logging in again.")
 
 credentials = load_credentials()
 
