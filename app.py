@@ -126,8 +126,6 @@ if st.sidebar.button("🔧 Change Password"):
                 st.error("❌ Incorrect old password.")
 
 # ------------------- DASHBOARD + DATA -------------------
-import pandas as pd
-
 st.markdown("""
     <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;700&display=swap" rel="stylesheet">
     <style>
