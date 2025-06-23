@@ -1,204 +1,46 @@
-import streamlit as st
-import pandas as pd
-import os
-from datetime import datetime
+import io
+from openpyxl import Workbook
+from openpyxl.styles import PatternFill
 
-# ---------- PAGE CONFIG ----------
-st.set_page_config(page_title="IP Masterlist Dashboard", layout="wide")
+if st.session_state.role in ["Moderator", "Admin"]:
+    st.markdown("### ⬇️ Export Options")
 
-# ---------- STYLES ----------
-st.markdown("""
-    <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;700&display=swap" rel="stylesheet">
-    <style>
-        html, body, [class*="css"] {
-            font-family: 'Roboto', sans-serif;
-        }
-        .glow-logo {
-            width: 80px;
-            filter: drop-shadow(0 0 8px #00ffaa);
-            animation: bounce 2s infinite;
-        }
-        @keyframes bounce {
-            0%, 100% { transform: translateY(0); }
-            50% { transform: translateY(-10px); }
-        }
-        h1 {
-            text-align: center;
-            font-size: 2rem;
-            margin-top: 0.5rem;
-        }
-    </style>
-""", unsafe_allow_html=True)
+    ip_options = sorted(filtered_df["IP Type"].dropna().unique())
+    selected_types = st.multiselect("📑 Select IP Types to include in download", ip_options, default=ip_options)
 
-# ---------- PASSWORDS (Memory Only) ----------
-if "passwords" not in st.session_state:
-    st.session_state.passwords = {
-        "admin": "admin123",
-        "mod": "mod123"
-    }
+    export_df = filtered_df[filtered_df["IP Type"].isin(selected_types)]
 
-if "logged_in" not in st.session_state:
-    st.session_state.logged_in = False
-    st.session_state.role = None
-
-# ---------- LOGIN ----------
-def login():
-    st.markdown("""
-        <div style="text-align: center;">
-            <img src="https://raw.githubusercontent.com/iprobsu/IPRO/main/ipro_logo.png" class="glow-logo" />
-            <h1>🔐 Login to Access IP Dashboard</h1>
-        </div>
-    """, unsafe_allow_html=True)
-    username = st.text_input("Username", key="login_user")
-    password = st.text_input("Password", type="password", key="login_pass")
-
-    if username in st.session_state.passwords and st.session_state.passwords[username] == password:
-        st.session_state.logged_in = True
-        st.session_state.role = "admin" if username == "admin" else "moderator"
-        st.rerun()
+    if export_df.empty:
+        st.warning("⚠️ No data to export with the selected IP Types.")
     else:
-        if username and password:
-            st.error("Invalid credentials ❌")
+        to_export = export_df.copy()
+        output = io.BytesIO()
+        wb = Workbook()
+        ws = wb.active
+        ws.title = "Filtered IP Records"
 
-# ---------- LOAD DATA ----------
-@st.cache_data
-def load_data():
-    data_dir = "data"
-    all_data = []
-    for filename in os.listdir(data_dir):
-        if filename.endswith(".xlsx"):
-            year = filename[:4]
-            path = os.path.join(data_dir, filename)
-            xls = pd.read_excel(path, sheet_name=None, engine="openpyxl")
-            for sheet_name, df in xls.items():
-                df["Year"] = year
-                df["IP Type"] = sheet_name
-                df["Source File"] = filename
-                all_data.append(df)
-    df = pd.concat(all_data, ignore_index=True)
-    df['Date Applied'] = pd.to_datetime(df.get('Date Applied', pd.NaT), errors='coerce')
-    df['Date Approved'] = pd.to_datetime(df.get('Date Approved', pd.NaT), errors='coerce')
-    df.fillna('', inplace=True)
-    if 'Author' in df.columns:
-        df['Author'] = df['Author'].astype(str).str.replace(';', ',').str.split(',')
-        df['Author'] = df['Author'].apply(lambda x: [a.strip() for a in x])
-        df = df.explode('Author').reset_index(drop=True)
-    return df
+        # Write header
+        ws.append(list(to_export.columns))
 
-# ---------- ADMIN TOOLS ----------
-def admin_tools_sidebar():
-    st.sidebar.markdown("### 🛠 Admin Tools")
+        # Row styling (only if enabled)
+        for idx, row in to_export.iterrows():
+            values = list(row.values)
+            ws.append(values)
 
-    st.sidebar.subheader("🔁 Replace Existing File")
-    file_to_replace = st.sidebar.selectbox("Select file to replace", [f for f in os.listdir("data") if f.endswith(".xlsx")], key="replace_select")
-    new_file = st.sidebar.file_uploader("Upload new version", type=["xlsx"], key="replace")
-    if new_file and st.sidebar.button("Replace File"):
-        with open(os.path.join("data", file_to_replace), "wb") as f:
-            f.write(new_file.read())
-        st.sidebar.success(f"Replaced {file_to_replace}")
+            if enable_coloring:
+                ip = row.get("IP Type", "")
+                hex_color = ip_color_map.get(ip, "#FFFFFF").replace("#", "")
+                fill = PatternFill(start_color=hex_color, end_color=hex_color, fill_type="solid")
+                for col in range(1, len(values)+1):
+                    ws.cell(row=idx+2, column=col).fill = fill  # +2 for header + 1-based index
 
-    st.sidebar.subheader("🗑️ Delete File")
-    file_to_delete = st.sidebar.selectbox("Select file to delete", [f for f in os.listdir("data") if f.endswith(".xlsx")], key="delete_select")
-    if st.sidebar.button("Delete File"):
-        try:
-            os.remove(os.path.join("data", file_to_delete))
-            st.sidebar.success(f"Deleted {file_to_delete}")
-        except Exception as e:
-            st.sidebar.error(f"Error deleting file: {e}")
+        # Save to buffer
+        wb.save(output)
+        output.seek(0)
 
-    st.sidebar.subheader("🔐 Change Passwords")
-    user_to_change = st.sidebar.selectbox("Select user", list(st.session_state.passwords.keys()))
-    new_pw = st.sidebar.text_input("New password", type="password")
-    if st.sidebar.button("Change Password"):
-        st.session_state.passwords[user_to_change] = new_pw
-        st.sidebar.success(f"Password updated for {user_to_change}")
-
-# ---------- DASHBOARD ----------
-def dashboard():
-    st.markdown("""
-        <div style="text-align: center;">
-            <img src="https://raw.githubusercontent.com/iprobsu/IPRO/main/ipro_logo.png" class="glow-logo" />
-            <h1>📚 IP Masterlist Dashboard</h1>
-        </div>
-    """, unsafe_allow_html=True)
-
-    df = load_data()
-
-    st.markdown("### 🔍 Search Intellectual Property Records")
-
-    col1, col2, col3 = st.columns([3, 2, 2])
-    with col1:
-        search_term = st.text_input("Search by Author or Title")
-    with col2:
-        ip_type = st.selectbox("Filter by IP Type", ["All"] + sorted(df['IP Type'].unique()))
-    with col3:
-        year = st.selectbox("Sort by Year", ["All"] + sorted(df['Year'].unique()))
-
-    with st.expander("📂 Advanced Filters"):
-        col4, col5, col6 = st.columns(3)
-        with col4:
-            college = st.selectbox("Filter by College", ["All"] + sorted(df['College'].unique()) if 'College' in df else ["All"])
-        with col5:
-            campus = st.selectbox("Filter by Campus", ["All"] + sorted(df['Campus'].unique()) if 'Campus' in df else ["All"])
-        with col6:
-            date_range = st.date_input("Filter by Date Applied", [])
-
-    filtered_df = df.copy()
-    if search_term:
-        filtered_df = filtered_df[
-            filtered_df['Author'].astype(str).str.contains(search_term, case=False, na=False) |
-            filtered_df['Title'].astype(str).str.contains(search_term, case=False, na=False)
-        ]
-    if ip_type != "All":
-        filtered_df = filtered_df[filtered_df['IP Type'] == ip_type]
-    if year != "All":
-        filtered_df = filtered_df[filtered_df['Year'] == year]
-    if 'College' in df.columns and college != "All":
-        filtered_df = filtered_df[filtered_df['College'] == college]
-    if 'Campus' in df.columns and campus != "All":
-        filtered_df = filtered_df[filtered_df['Campus'] == campus]
-    if date_range:
-        if len(date_range) == 1:
-            filtered_df = filtered_df[filtered_df['Date Applied'] >= pd.to_datetime(date_range[0])]
-        elif len(date_range) == 2:
-            start, end = pd.to_datetime(date_range[0]), pd.to_datetime(date_range[1])
-            filtered_df = filtered_df[filtered_df['Date Applied'].between(start, end)]
-
-    ip_color_map = {
-        "Copyright": "#FFD8A8",
-        "ISBN": "#E6CCFF",
-        "ISSN": "#D3D3D3",
-        "Industrial Design": "#FFFF99",
-        "Trademark": "#ADD8E6",
-        "Patent": "#90EE90",
-        "Utility Model": "#FFB6C1"
-    }
-
-    st.sidebar.markdown("🎨 **Highlight Rows by IP Type**")
-    enable_coloring = st.sidebar.checkbox("Enable Row Coloring")
-
-    if st.session_state.role == "admin":
-        st.sidebar.divider()
-        admin_tools_sidebar()
-
-    if filtered_df.empty:
-        st.warning("😕 No records matched your filters or search term.")
-    else:
-        display_df = filtered_df.dropna(axis=1, how='all')
-        display_df = display_df.loc[:, ~(display_df == '').all()]
-        st.markdown(f"### 📄 Showing {len(display_df)} result{'s' if len(display_df) != 1 else ''}")
-
-        if enable_coloring:
-            def apply_color(row):
-                bg = ip_color_map.get(row['IP Type'], '#ffffff')
-                return [f'background-color: {bg}'] * len(row)
-            styled_df = display_df.style.apply(apply_color, axis=1)
-            st.markdown(styled_df.to_html(escape=False), unsafe_allow_html=True)
-        else:
-            st.dataframe(display_df, use_container_width=True, height=600)
-
-# ---------- MAIN ----------
-if not st.session_state.logged_in:
-    login()
-else:
-    dashboard()
+        st.download_button(
+            label="⬇️ Download as Excel (With Colors)" if enable_coloring else "⬇️ Download as Excel",
+            data=output,
+            file_name="filtered_ip_data.xlsx",
+            mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+        )
