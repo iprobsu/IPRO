@@ -34,7 +34,7 @@ if not st.session_state.logged_in:
             }
         </style>
         <div class="login-box">
-            <h2>\U0001f510 IPRO Dashboard Login</h2>
+            <h2>🔐 IPRO Dashboard Login</h2>
         </div>
     """, unsafe_allow_html=True)
 
@@ -53,12 +53,12 @@ if not st.session_state.logged_in:
                 st.session_state.role = "Moderator"
                 st.rerun()
             else:
-                st.error("\u274c Invalid username or password")
+                st.error("❌ Invalid username or password")
     st.stop()
 
 # --- Sidebar ---
-st.sidebar.markdown(f"**\U0001f512 Current Role:** {st.session_state.role}")
-dark_mode = st.sidebar.toggle("\U0001f319 Enable Dark Mode", value=False)
+st.sidebar.markdown(f"**🔒 Current Role:** {st.session_state.role}")
+dark_mode = st.sidebar.toggle("🌗 Enable Dark Mode", value=False)
 
 # --- Dark Mode Styling ---
 if dark_mode:
@@ -76,7 +76,7 @@ if dark_mode:
 st.markdown("""
     <div style="text-align: center;">
         <img src="https://raw.githubusercontent.com/iprobsu/IPRO/main/ipro_logo.png" alt="IPRO Logo" width="80" style="filter: drop-shadow(0 0 10px #00ffaa); animation: bounce 2s infinite;" />
-        <h1>\U0001f4da IP Masterlist Dashboard</h1>
+        <h1>📚 IP Masterlist Dashboard</h1>
     </div>
     <style>
         @keyframes bounce {
@@ -113,7 +113,7 @@ def load_data():
 df = load_data()
 
 # --- Filters ---
-st.markdown("### \U0001f50d Search Intellectual Property Records")
+st.markdown("### 🔍 Search Intellectual Property Records")
 col1, col2, col3 = st.columns([3, 2, 2])
 with col1:
     search_term = st.text_input("Search by Author or Title")
@@ -122,7 +122,7 @@ with col2:
 with col3:
     year = st.selectbox("Sort by Year", ["All"] + sorted(df['Year'].unique()))
 
-with st.expander("\U0001f5c2 Advanced Filters"):
+with st.expander("📂 Advanced Filters"):
     col4, col5, col6 = st.columns(3)
     with col4:
         college = st.selectbox("Filter by College", ["All"] + sorted(df['College'].unique()) if 'College' in df else ["All"])
@@ -154,7 +154,7 @@ if date_range:
         filtered_df = filtered_df[filtered_df['Date Applied'].between(start, end)]
 
 # --- Row Coloring Setup ---
-show_colors = st.sidebar.toggle("\U0001f3a8 Customize Row Colors", value=False)
+show_colors = st.sidebar.toggle("🎨 Customize Row Colors", value=False)
 ip_color_map = {}
 enable_coloring = False
 
@@ -170,7 +170,7 @@ if show_colors:
                 st.sidebar.markdown(f"<div style='margin-top: 8px'>{ip}</div>", unsafe_allow_html=True)
 
 # --- Display Table ---
-st.markdown(f"### \U0001f4c4 Showing {len(filtered_df)} result{'s' if len(filtered_df) != 1 else ''}")
+st.markdown(f"### 📄 Showing {len(filtered_df)} result{'s' if len(filtered_df) != 1 else ''}")
 
 if enable_coloring and ip_color_map:
     def apply_color(row):
@@ -188,7 +188,7 @@ if st.session_state.role in ["Moderator", "Admin"]:
     st.markdown("### ⬇️ Export Options")
 
     ip_options = sorted(filtered_df["IP Type"].dropna().unique())
-    selected_types = st.multiselect("\U0001f4d1 Select IP Types to include in download", ip_options, default=ip_options)
+    selected_types = st.multiselect("📑 Select IP Types to include in download", ip_options, default=ip_options)
 
     export_df = filtered_df[filtered_df["IP Type"].isin(selected_types)]
 
@@ -214,7 +214,7 @@ if st.session_state.role in ["Moderator", "Admin"]:
                 hex_color = ip_color_map.get(ip, "#FFFFFF").replace("#", "")
                 fill = PatternFill(start_color=hex_color, end_color=hex_color, fill_type="solid")
                 for col in range(1, len(values) + 1):
-                    ws.cell(row=idx + 2, column=col).fill = fill  # +2 to account for header row
+                    ws.cell(row=idx + 2, column=col).fill = fill
 
         # Finalize and serve download
         wb.save(output)
