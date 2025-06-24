@@ -49,17 +49,18 @@ if not st.session_state.logged_in:
     with st.form("login_form"):
         user = st.text_input("Username")
         pwd = st.text_input("Password", type="password")
-        if st.form_submit_button("Login"):
+        login_btn = st.form_submit_button("Login")
+
+        if login_btn:
             if user == "admin" and pwd == "admin123":
                 st.session_state.logged_in = True
                 st.session_state.role = "Admin"
-                st.experimental_rerun()
             elif user == "mod" and pwd == "mod123":
                 st.session_state.logged_in = True
                 st.session_state.role = "Moderator"
-                st.experimental_rerun()
             else:
-                st.error("❌ Invalid credentials")
+                st.error("❌ Invalid username or password")
+            st.experimental_rerun()
     st.stop()
 
 # --- Load Data ---
@@ -90,10 +91,10 @@ df = st.session_state.full_data
 
 # --- Navigation ---
 st.sidebar.markdown("## 🧭 Navigation")
-page = st.sidebar.radio("Go to", ["Dashboard", "Summary Statistics"])
+st.session_state.current_page = st.sidebar.radio("Go to", ["Dashboard", "Summary Statistics"], index=["Dashboard", "Summary Statistics"].index(st.session_state.current_page))
 
 # --- Summary Statistics Page ---
-if page == "Summary Statistics":
+if st.session_state.current_page == "Summary Statistics":
     st.markdown("## 📊 Summary Statistics")
     st.metric("Total Entries", len(df))
 
@@ -114,7 +115,6 @@ if page == "Summary Statistics":
             x='Year', y='Count', tooltip=['Year', 'Count']
         ).properties(title="IP Submissions Over Time"), use_container_width=True)
 
-    st.sidebar.markdown("[🏠 Back to Dashboard](#)")
     st.stop()
 
 # --- Dashboard Page ---
