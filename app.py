@@ -22,10 +22,19 @@ if "dark_mode" not in st.session_state:
     st.session_state.dark_mode = False
 
 # --- Sidebar ---
-dark_mode_toggle_color = "#e8eaed" if not st.session_state.dark_mode else "#ffffff"
-st.sidebar.markdown(f"<span style='color: {dark_mode_toggle_color}'>🔒 Current Role: {st.session_state.role}</span>", unsafe_allow_html=True)
-st.session_state.dark_mode = st.sidebar.toggle("🌗 Enable Dark Mode", value=st.session_state.dark_mode)
-dark_mode = st.session_state.dark_mode
+# --- Sidebar Fix ---
+role_color = "#e8eaed" if st.session_state.dark_mode else "#202124"
+st.sidebar.markdown(
+    f"<span style='color: {role_color}; font-weight: bold;'>🔒 Current Role: {st.session_state.role}</span>", 
+    unsafe_allow_html=True
+)
+
+# Toggle Dark Mode with a styled label
+st.sidebar.markdown(
+    f"<label style='color: {role_color};'>🌗 Enable Dark Mode</label>", 
+    unsafe_allow_html=True
+)
+st.session_state.dark_mode = st.sidebar.toggle("", value=st.session_state.dark_mode)
 
 # --- Dark Mode Styling (Chrome-like) ---
 if dark_mode:
