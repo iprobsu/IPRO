@@ -21,10 +21,10 @@ if "dark_mode" not in st.session_state:
     st.session_state.dark_mode = False
 
 # --- Sidebar ---
-dark_mode_toggle_color = "#e8eaed" if not st.session_state.dark_mode else "#ffffff"
-st.sidebar.markdown(f"<span style='color: {dark_mode_toggle_color}'>🔒 Current Role: {st.session_state.role}</span>", unsafe_allow_html=True)
 st.session_state.dark_mode = st.sidebar.toggle("🌗 Enable Dark Mode", value=st.session_state.dark_mode)
 dark_mode = st.session_state.dark_mode
+sidebar_font_color = "#ffffff" if dark_mode else "#000000"
+st.sidebar.markdown(f"<span style='color: {sidebar_font_color}'>🔒 Current Role: {st.session_state.role}</span>", unsafe_allow_html=True)
 
 # --- Dark Mode Styling (Chrome-like) ---
 if dark_mode:
@@ -35,8 +35,9 @@ if dark_mode:
                 color: #e8eaed !important;
                 font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
             }
-            [class*="block-container"], [data-testid="stSidebar"] {
+            [class*="block-container"], [data-testid="stSidebar"], .stForm, .stDataFrameContainer, .stDataEditorContainer {
                 background-color: #202124 !important;
+                color: #e8eaed !important;
             }
             input, select, textarea {
                 background-color: #303134 !important;
@@ -49,11 +50,7 @@ if dark_mode:
             .st-bb, .st-bc, .stMarkdown, .stMarkdown p, .stText, .stTextInput, .stSelectbox, .stDateInput, .css-1v0mbdj, .stMultiSelect {
                 color: #e8eaed !important;
             }
-            .css-1aumxhk, .css-1v3fvcr, .css-ffhzg2, .stDataFrameContainer, .stDataEditorContainer {
-                background-color: #202124 !important;
-                color: #e8eaed !important;
-            }
-            .stCheckbox > label {
+            .stCheckbox > label, .stRadio > label {
                 color: #e8eaed !important;
             }
         </style>
