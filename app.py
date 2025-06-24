@@ -44,11 +44,25 @@ if dark_mode:
                 color: #e8eaed !important;
                 border: 1px solid #5f6368 !important;
             }
-            label {
+            label, .stTextInput label, .stSelectbox label, .stDateInput label, .stMultiSelect label {
                 color: #e8eaed !important;
             }
-            .stDataFrameContainer, .stDataEditorContainer {
+            .st-bb, .st-bc, .stMarkdown, .stMarkdown p, .stText, .stTextInput, .stSelectbox, .stDateInput, .css-1v0mbdj, .stMultiSelect {
+                color: #e8eaed !important;
+            }
+            .css-1aumxhk, .css-1v3fvcr, .css-ffhzg2, .stDataFrameContainer, .stDataEditorContainer {
                 background-color: #202124 !important;
+                color: #e8eaed !important;
+            }
+            .stCheckbox > label {
+                color: #e8eaed !important;
+            }
+            .stSelectbox > div[data-baseweb="select"] > div {
+                background-color: #303134 !important;
+            }
+            .stButton > button {
+                background-color: #5f6368;
+                color: white;
             }
         </style>
     """, unsafe_allow_html=True)
@@ -126,69 +140,99 @@ def load_data():
 
 df = load_data()
 
-# --- Main Filter Panel ---
-st.markdown("## 🎛️ Filter Intellectual Property Records")
-col1, col2, col3, col4 = st.columns(4)
+# --- Filters ---
+st.markdown("### 🔍 Search Intellectual Property Records")
+col1, col2, col3, col4 = st.columns([3, 2, 2, 1])
 with col1:
-    selected_authors = st.multiselect("Filter by Author", sorted(df['Author'].dropna().unique()))
+    search_term = st.text_input("Search by Author or Title")
 with col2:
-    selected_colleges = st.multiselect("Filter by College", sorted(df['College'].dropna().unique()) if 'College' in df else [])
+    ip_type = st.selectbox("Filter by IP Type", ["All"] + sorted(df['IP Type'].unique()))
 with col3:
-    selected_iptypes = st.multiselect("Filter by IP Type", sorted(df['IP Type'].dropna().unique()))
+    year = st.selectbox("Sort by Year", ["All"] + sorted(df['Year'].unique()))
 with col4:
-    selected_years = st.multiselect("Filter by Year", sorted(df['Year'].dropna().unique()))
+    stats_button = st.button("📈")
 
-# --- Summary Toggle Icon ---
-if st.button("📊 Show Summary Statistics"):
+with st.expander("📂 Advanced Filters"):
+    col4, col5, col6 = st.columns(3)
+    with col4:
+        college = st.selectbox("Filter by College", ["All"] + sorted(df['College'].unique()) if 'College' in df else ["All"])
+    with col5:
+        campus = st.selectbox("Filter by Campus", ["All"] + sorted(df['Campus'].unique()) if 'Campus' in df else ["All"])
+    with col6:
+        date_range = st.date_input("Filter by Date Applied", [])
 
-    # --- Apply Combined Filters ---
-    filtered_df = df.copy()
-    if selected_authors:
-        filtered_df = filtered_df[filtered_df['Author'].isin(selected_authors)]
-    if selected_colleges:
-        filtered_df = filtered_df[filtered_df['College'].isin(selected_colleges)]
-    if selected_iptypes:
-        filtered_df = filtered_df[filtered_df['IP Type'].isin(selected_iptypes)]
-    if selected_years:
-        filtered_df = filtered_df[filtered_df['Year'].isin(selected_years)]
+# --- Apply Filters ---
+filtered_df = df.copy()
+if search_term:
+    filtered_df = filtered_df[
+        filtered_df['Author'].astype(str).str.contains(search_term, case=False, na=False) |
+        filtered_df['Title'].astype(str).str.contains(search_term, case=False, na=False)
+    ]
+if ip_type != "All":
+    filtered_df = filtered_df[filtered_df['IP Type'] == ip_type]
+if year != "All":
+    filtered_df = filtered_df[filtered_df['Year'] == year]
+if 'College' in df.columns and college != "All":
+    filtered_df = filtered_df[filtered_df['College'] == college]
+if 'Campus' in df.columns and campus != "All":
+    filtered_df = filtered_df[filtered_df['Campus'] == campus]
+if date_range:
+    if len(date_range) == 1:
+        filtered_df = filtered_df[filtered_df['Date Applied'] >= pd.to_datetime(date_range[0])]
+    elif len(date_range) == 2:
+        start, end = pd.to_datetime(date_range[0]), pd.to_datetime(date_range[1])
+        filtered_df = filtered_df[filtered_df['Date Applied'].between(start, end)]
 
-    # --- Summary Panel ---
-    st.markdown("## 📊 Summary of Filtered Data")
-    if not filtered_df.empty:
-        st.metric("Total Records", len(filtered_df))
+# --- Summary Stats Panel ---
+if stats_button and not filtered_df.empty:
+    st.markdown("## 📊 Summary Statistics Panel")
+    st.markdown("Total Records: **{}**".format(len(filtered_df)))
 
-        kpi1, kpi2, kpi3 = st.columns(3)
-        with kpi1:
-            st.metric("Unique Authors", filtered_df['Author'].nunique())
-        with kpi2:
-            st.metric("Colleges Involved", filtered_df['College'].nunique())
-        with kpi3:
-            st.metric("Years Covered", filtered_df['Year'].nunique())
+    st.markdown("### 🎯 KPIs")
+    kpi1, kpi2, kpi3 = st.columns(3)
+    with kpi1:
+        st.metric(label="Total Entries", value=len(filtered_df))
+    with kpi2:
+        most_common = filtered_df['IP Type'].mode()[0] if not filtered_df.empty else "N/A"
+        st.metric(label="Most Common IP Type", value=most_common)
+    with kpi3:
+        top_author = filtered_df['Author'].value_counts().idxmax() if 'Author' in filtered_df else "N/A"
+        st.metric(label="Top Author", value=top_author)
 
-        chart1, chart2 = st.columns(2)
-        with chart1:
-            st.altair_chart(alt.Chart(filtered_df).mark_bar().encode(
-                x='IP Type', y='count()', color='IP Type', tooltip=['IP Type', 'count()']
-            ).properties(title="IP Type Distribution"), use_container_width=True)
+    if 'IP Type' in filtered_df:
+        st.altair_chart(alt.Chart(filtered_df).mark_bar().encode(
+            x='IP Type', y='count()', color='IP Type', tooltip=['IP Type', 'count()']
+        ).properties(title="IP Type Distribution"), use_container_width=True)
 
-            if 'College' in filtered_df:
-                st.altair_chart(alt.Chart(filtered_df).mark_arc().encode(
-                    theta='count()', color='College', tooltip=['College', 'count()']
-                ).properties(title="College Contribution"), use_container_width=True)
+    if 'College' in filtered_df:
+        st.altair_chart(alt.Chart(filtered_df).mark_arc().encode(
+            theta='count()', color='College', tooltip=['College', 'count()']
+        ).properties(title="Distribution by College"), use_container_width=True)
 
-        with chart2:
-            if 'Year' in filtered_df:
-                year_df = filtered_df['Year'].value_counts().reset_index()
-                year_df.columns = ['Year', 'Count']
-                st.altair_chart(alt.Chart(year_df).mark_line(point=True).encode(
-                    x='Year', y='Count', tooltip=['Year', 'Count']
-                ).properties(title="Submissions Over Time"), use_container_width=True)
+    if 'Year' in filtered_df:
+        year_df = filtered_df['Year'].value_counts().reset_index()
+        year_df.columns = ['Year', 'Count']
+        st.altair_chart(alt.Chart(year_df).mark_line(point=True).encode(
+            x='Year', y='Count', tooltip=['Year', 'Count']
+        ).properties(title="IP Submissions Over Time"), use_container_width=True)
 
-            if 'Author' in filtered_df:
-                top_authors = filtered_df['Author'].value_counts().nlargest(5).reset_index()
-                top_authors.columns = ['Author', 'Count']
-                st.altair_chart(alt.Chart(top_authors).mark_bar().encode(
-                    x='Count', y=alt.Y('Author', sort='-x'), tooltip=['Author', 'Count']
-                ).properties(title="Top Authors"), use_container_width=True)
-    else:
-        st.warning("No data matches your filter selection.")
+# --- Edit Mode Toggle ---
+if st.session_state.role == "Admin":
+    edit_toggle_col = st.columns([1, 9])[0]
+    with edit_toggle_col:
+        if st.button("✏️ Edit Mode"):
+            st.session_state.edit_mode = not st.session_state.edit_mode
+
+# --- Editable Table View ---
+if st.session_state.edit_mode:
+    st.info("🛠️ You are now in Edit Mode. Changes will not be saved unless you click 'Save Changes'.")
+    edited_df = st.data_editor(filtered_df, use_container_width=True, key="editable_table")
+
+    if st.button("💾 Save Changes"):
+        st.session_state.edited_df = edited_df
+        st.success("✅ Changes have been saved (in session only).")
+    if st.button("↩️ Cancel Changes"):
+        st.session_state.edit_mode = False
+        st.rerun()
+else:
+    st.dataframe(filtered_df, use_container_width=True, height=600)
