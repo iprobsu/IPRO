@@ -141,4 +141,5 @@ def dashboard_table():
     else:
         st.dataframe(df_f,use_container_width=True,height=600)
 
-dashboard_table()
+if st.session_state.page == 'dashboard':
+    dashboard_table()
