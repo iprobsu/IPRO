@@ -167,20 +167,31 @@ if year_filter:
 st.markdown("## 📊 Summary of Selected Data")
 if not filtered_df.empty:
     st.metric("Total Records", len(filtered_df))
-    st.altair_chart(alt.Chart(filtered_df).mark_bar().encode(
-        x='IP Type', y='count()', color='IP Type', tooltip=['IP Type', 'count()']
-    ).properties(title="IP Type Distribution"), use_container_width=True)
 
-    if 'College' in filtered_df:
-        st.altair_chart(alt.Chart(filtered_df).mark_arc().encode(
-            theta='count()', color='College', tooltip=['College', 'count()']
-        ).properties(title="College Distribution"), use_container_width=True)
+    summary_col1, summary_col2 = st.columns(2)
+    with summary_col1:
+        st.altair_chart(alt.Chart(filtered_df).mark_bar().encode(
+            x='IP Type', y='count()', color='IP Type', tooltip=['IP Type', 'count()']
+        ).properties(title="IP Type Distribution"), use_container_width=True)
 
-    if 'Year' in filtered_df:
-        year_df = filtered_df['Year'].value_counts().reset_index()
-        year_df.columns = ['Year', 'Count']
-        st.altair_chart(alt.Chart(year_df).mark_line(point=True).encode(
-            x='Year', y='Count', tooltip=['Year', 'Count']
-        ).properties(title="Submissions by Year"), use_container_width=True)
+        if 'College' in filtered_df:
+            st.altair_chart(alt.Chart(filtered_df).mark_arc().encode(
+                theta='count()', color='College', tooltip=['College', 'count()']
+            ).properties(title="College Distribution"), use_container_width=True)
+
+    with summary_col2:
+        if 'Year' in filtered_df:
+            year_df = filtered_df['Year'].value_counts().reset_index()
+            year_df.columns = ['Year', 'Count']
+            st.altair_chart(alt.Chart(year_df).mark_line(point=True).encode(
+                x='Year', y='Count', tooltip=['Year', 'Count']
+            ).properties(title="Submissions by Year"), use_container_width=True)
+
+        if 'Author' in filtered_df:
+            top_authors = filtered_df['Author'].value_counts().nlargest(5).reset_index()
+            top_authors.columns = ['Author', 'Count']
+            st.altair_chart(alt.Chart(top_authors).mark_bar().encode(
+                x='Count', y=alt.Y('Author', sort='-x'), tooltip=['Author', 'Count']
+            ).properties(title="Top Authors"), use_container_width=True)
 else:
     st.warning("No data matches your current summary filters.")
