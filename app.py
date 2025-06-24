@@ -60,6 +60,10 @@ if dark_mode:
             .stSelectbox > div[data-baseweb="select"] > div {
                 background-color: #303134 !important;
             }
+            .stButton > button {
+                background-color: #5f6368;
+                color: white;
+            }
         </style>
     """, unsafe_allow_html=True)
 
