@@ -20,7 +20,7 @@ for key, default in {
     if key not in st.session_state:
         st.session_state[key] = default
 
-# --- Apply Dark Mode Styling Dynamically (Without Lag) ---
+# --- Apply Dark Mode Styling Dynamically ---
 base_styles = """
     html, body, [class*='main'] { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
     [data-testid="stSidebar"] span { font-weight: bold; }
@@ -55,11 +55,11 @@ if not st.session_state.logged_in:
             if user == "admin" and pwd == "admin123":
                 st.session_state.logged_in = True
                 st.session_state.role = "Admin"
-                st.rerun()
+                st.experimental_rerun()
             elif user == "mod" and pwd == "mod123":
                 st.session_state.logged_in = True
                 st.session_state.role = "Moderator"
-                st.rerun()
+                st.experimental_rerun()
             else:
                 st.error("❌ Invalid username or password")
     st.stop()
@@ -131,12 +131,12 @@ st.markdown("""
 st.markdown("### 🔍 Search Intellectual Property Records")
 col1, col2, col3 = st.columns([3,2,2])
 search_term = col1.text_input("Search by Author or Title")
-ip_type = col2.selectbox("Filter by IP Type", ["All"] + sorted(df['IP Type'].unique()))
-year = col3.selectbox("Filter by Year", ["All"] + sorted(df['Year'].unique()))
+ip_type = col2.selectbox("Filter by IP Type", ["All"] + sorted(df['IP Type'].dropna().unique().tolist()))
+year = col3.selectbox("Filter by Year", ["All"] + sorted(df['Year'].dropna().unique().tolist()))
 
 with st.expander("📂 Advanced Filters"):
-    college = st.selectbox("Filter by College", ["All"] + sorted(df['College'].unique()) if 'College' in df else ["All"])
-    campus = st.selectbox("Filter by Campus", ["All"] + sorted(df['Campus'].unique()) if 'Campus' in df else ["All"])
+    college = st.selectbox("Filter by College", ["All"] + sorted(df['College'].dropna().unique().tolist()) if 'College' in df else ["All"])
+    campus = st.selectbox("Filter by Campus", ["All"] + sorted(df['Campus'].dropna().unique().tolist()) if 'Campus' in df else ["All"])
     date_range = st.date_input("Filter by Date Applied", [])
 
 # --- Apply Filters ---
@@ -163,6 +163,7 @@ if st.session_state.edit_mode:
     if st.button("💾 Save Changes"):
         st.session_state.edited_df = edited; st.success("✅ Saved in session.")
     if st.button("↩️ Cancel"):
-        st.session_state.edit_mode=False; st.rerun()
+        st.session_state.edit_mode=False; st.experimental_rerun()
 else:
     st.dataframe(filtered_df, use_container_width=True, height=600)
+
