@@ -138,54 +138,57 @@ with col3:
 with col4:
     selected_years = st.multiselect("Filter by Year", sorted(df['Year'].dropna().unique()))
 
-# --- Apply Combined Filters ---
-filtered_df = df.copy()
-if selected_authors:
-    filtered_df = filtered_df[filtered_df['Author'].isin(selected_authors)]
-if selected_colleges:
-    filtered_df = filtered_df[filtered_df['College'].isin(selected_colleges)]
-if selected_iptypes:
-    filtered_df = filtered_df[filtered_df['IP Type'].isin(selected_iptypes)]
-if selected_years:
-    filtered_df = filtered_df[filtered_df['Year'].isin(selected_years)]
+# --- Summary Toggle Icon ---
+if st.button("📊 Show Summary Statistics"):
 
-# --- Summary Panel ---
-st.markdown("## 📊 Summary of Filtered Data")
-if not filtered_df.empty:
-    st.metric("Total Records", len(filtered_df))
+    # --- Apply Combined Filters ---
+    filtered_df = df.copy()
+    if selected_authors:
+        filtered_df = filtered_df[filtered_df['Author'].isin(selected_authors)]
+    if selected_colleges:
+        filtered_df = filtered_df[filtered_df['College'].isin(selected_colleges)]
+    if selected_iptypes:
+        filtered_df = filtered_df[filtered_df['IP Type'].isin(selected_iptypes)]
+    if selected_years:
+        filtered_df = filtered_df[filtered_df['Year'].isin(selected_years)]
 
-    kpi1, kpi2, kpi3 = st.columns(3)
-    with kpi1:
-        st.metric("Unique Authors", filtered_df['Author'].nunique())
-    with kpi2:
-        st.metric("Colleges Involved", filtered_df['College'].nunique())
-    with kpi3:
-        st.metric("Years Covered", filtered_df['Year'].nunique())
+    # --- Summary Panel ---
+    st.markdown("## 📊 Summary of Filtered Data")
+    if not filtered_df.empty:
+        st.metric("Total Records", len(filtered_df))
 
-    chart1, chart2 = st.columns(2)
-    with chart1:
-        st.altair_chart(alt.Chart(filtered_df).mark_bar().encode(
-            x='IP Type', y='count()', color='IP Type', tooltip=['IP Type', 'count()']
-        ).properties(title="IP Type Distribution"), use_container_width=True)
+        kpi1, kpi2, kpi3 = st.columns(3)
+        with kpi1:
+            st.metric("Unique Authors", filtered_df['Author'].nunique())
+        with kpi2:
+            st.metric("Colleges Involved", filtered_df['College'].nunique())
+        with kpi3:
+            st.metric("Years Covered", filtered_df['Year'].nunique())
 
-        if 'College' in filtered_df:
-            st.altair_chart(alt.Chart(filtered_df).mark_arc().encode(
-                theta='count()', color='College', tooltip=['College', 'count()']
-            ).properties(title="College Contribution"), use_container_width=True)
+        chart1, chart2 = st.columns(2)
+        with chart1:
+            st.altair_chart(alt.Chart(filtered_df).mark_bar().encode(
+                x='IP Type', y='count()', color='IP Type', tooltip=['IP Type', 'count()']
+            ).properties(title="IP Type Distribution"), use_container_width=True)
 
-    with chart2:
-        if 'Year' in filtered_df:
-            year_df = filtered_df['Year'].value_counts().reset_index()
-            year_df.columns = ['Year', 'Count']
-            st.altair_chart(alt.Chart(year_df).mark_line(point=True).encode(
-                x='Year', y='Count', tooltip=['Year', 'Count']
-            ).properties(title="Submissions Over Time"), use_container_width=True)
+            if 'College' in filtered_df:
+                st.altair_chart(alt.Chart(filtered_df).mark_arc().encode(
+                    theta='count()', color='College', tooltip=['College', 'count()']
+                ).properties(title="College Contribution"), use_container_width=True)
 
-        if 'Author' in filtered_df:
-            top_authors = filtered_df['Author'].value_counts().nlargest(5).reset_index()
-            top_authors.columns = ['Author', 'Count']
-            st.altair_chart(alt.Chart(top_authors).mark_bar().encode(
-                x='Count', y=alt.Y('Author', sort='-x'), tooltip=['Author', 'Count']
-            ).properties(title="Top Authors"), use_container_width=True)
-else:
-    st.warning("No data matches your filter selection.")
+        with chart2:
+            if 'Year' in filtered_df:
+                year_df = filtered_df['Year'].value_counts().reset_index()
+                year_df.columns = ['Year', 'Count']
+                st.altair_chart(alt.Chart(year_df).mark_line(point=True).encode(
+                    x='Year', y='Count', tooltip=['Year', 'Count']
+                ).properties(title="Submissions Over Time"), use_container_width=True)
+
+            if 'Author' in filtered_df:
+                top_authors = filtered_df['Author'].value_counts().nlargest(5).reset_index()
+                top_authors.columns = ['Author', 'Count']
+                st.altair_chart(alt.Chart(top_authors).mark_bar().encode(
+                    x='Count', y=alt.Y('Author', sort='-x'), tooltip=['Author', 'Count']
+                ).properties(title="Top Authors"), use_container_width=True)
+    else:
+        st.warning("No data matches your filter selection.")
