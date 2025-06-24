@@ -44,25 +44,11 @@ if dark_mode:
                 color: #e8eaed !important;
                 border: 1px solid #5f6368 !important;
             }
-            label, .stTextInput label, .stSelectbox label, .stDateInput label, .stMultiSelect label {
+            label {
                 color: #e8eaed !important;
             }
-            .st-bb, .st-bc, .stMarkdown, .stMarkdown p, .stText, .stTextInput, .stSelectbox, .stDateInput, .css-1v0mbdj, .stMultiSelect {
-                color: #e8eaed !important;
-            }
-            .css-1aumxhk, .css-1v3fvcr, .css-ffhzg2, .stDataFrameContainer, .stDataEditorContainer {
+            .stDataFrameContainer, .stDataEditorContainer {
                 background-color: #202124 !important;
-                color: #e8eaed !important;
-            }
-            .stCheckbox > label {
-                color: #e8eaed !important;
-            }
-            .stSelectbox > div[data-baseweb="select"] > div {
-                background-color: #303134 !important;
-            }
-            .stButton > button {
-                background-color: #5f6368;
-                color: white;
             }
         </style>
     """, unsafe_allow_html=True)
@@ -140,36 +126,44 @@ def load_data():
 
 df = load_data()
 
-# --- Filter Section ---
-st.markdown("## 🎛 Summary Filter Panel")
+# --- Main Filter Panel ---
+st.markdown("## 🎛️ Filter Intellectual Property Records")
 col1, col2, col3, col4 = st.columns(4)
 with col1:
-    author_filter = st.multiselect("Author", sorted(df['Author'].dropna().unique()))
+    selected_authors = st.multiselect("Filter by Author", sorted(df['Author'].dropna().unique()))
 with col2:
-    college_filter = st.multiselect("College", sorted(df['College'].dropna().unique()) if 'College' in df else [])
+    selected_colleges = st.multiselect("Filter by College", sorted(df['College'].dropna().unique()) if 'College' in df else [])
 with col3:
-    ip_type_filter = st.multiselect("IP Type", sorted(df['IP Type'].dropna().unique()))
+    selected_iptypes = st.multiselect("Filter by IP Type", sorted(df['IP Type'].dropna().unique()))
 with col4:
-    year_filter = st.multiselect("Year", sorted(df['Year'].dropna().unique()))
+    selected_years = st.multiselect("Filter by Year", sorted(df['Year'].dropna().unique()))
 
-# --- Apply Filters ---
+# --- Apply Combined Filters ---
 filtered_df = df.copy()
-if author_filter:
-    filtered_df = filtered_df[filtered_df['Author'].isin(author_filter)]
-if college_filter and 'College' in df:
-    filtered_df = filtered_df[filtered_df['College'].isin(college_filter)]
-if ip_type_filter:
-    filtered_df = filtered_df[filtered_df['IP Type'].isin(ip_type_filter)]
-if year_filter:
-    filtered_df = filtered_df[filtered_df['Year'].isin(year_filter)]
+if selected_authors:
+    filtered_df = filtered_df[filtered_df['Author'].isin(selected_authors)]
+if selected_colleges:
+    filtered_df = filtered_df[filtered_df['College'].isin(selected_colleges)]
+if selected_iptypes:
+    filtered_df = filtered_df[filtered_df['IP Type'].isin(selected_iptypes)]
+if selected_years:
+    filtered_df = filtered_df[filtered_df['Year'].isin(selected_years)]
 
 # --- Summary Panel ---
-st.markdown("## 📊 Summary of Selected Data")
+st.markdown("## 📊 Summary of Filtered Data")
 if not filtered_df.empty:
     st.metric("Total Records", len(filtered_df))
 
-    summary_col1, summary_col2 = st.columns(2)
-    with summary_col1:
+    kpi1, kpi2, kpi3 = st.columns(3)
+    with kpi1:
+        st.metric("Unique Authors", filtered_df['Author'].nunique())
+    with kpi2:
+        st.metric("Colleges Involved", filtered_df['College'].nunique())
+    with kpi3:
+        st.metric("Years Covered", filtered_df['Year'].nunique())
+
+    chart1, chart2 = st.columns(2)
+    with chart1:
         st.altair_chart(alt.Chart(filtered_df).mark_bar().encode(
             x='IP Type', y='count()', color='IP Type', tooltip=['IP Type', 'count()']
         ).properties(title="IP Type Distribution"), use_container_width=True)
@@ -177,15 +171,15 @@ if not filtered_df.empty:
         if 'College' in filtered_df:
             st.altair_chart(alt.Chart(filtered_df).mark_arc().encode(
                 theta='count()', color='College', tooltip=['College', 'count()']
-            ).properties(title="College Distribution"), use_container_width=True)
+            ).properties(title="College Contribution"), use_container_width=True)
 
-    with summary_col2:
+    with chart2:
         if 'Year' in filtered_df:
             year_df = filtered_df['Year'].value_counts().reset_index()
             year_df.columns = ['Year', 'Count']
             st.altair_chart(alt.Chart(year_df).mark_line(point=True).encode(
                 x='Year', y='Count', tooltip=['Year', 'Count']
-            ).properties(title="Submissions by Year"), use_container_width=True)
+            ).properties(title="Submissions Over Time"), use_container_width=True)
 
         if 'Author' in filtered_df:
             top_authors = filtered_df['Author'].value_counts().nlargest(5).reset_index()
@@ -194,4 +188,4 @@ if not filtered_df.empty:
                 x='Count', y=alt.Y('Author', sort='-x'), tooltip=['Author', 'Count']
             ).properties(title="Top Authors"), use_container_width=True)
 else:
-    st.warning("No data matches your current summary filters.")
+    st.warning("No data matches your filter selection.")
