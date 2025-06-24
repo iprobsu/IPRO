@@ -51,11 +51,11 @@ if not st.session_state.logged_in:
             if user == "admin" and pwd == "admin123":
                 st.session_state.logged_in = True
                 st.session_state.role = "Admin"
-                st.experimental_rerun()
+                st.rerun()
             elif user == "mod" and pwd == "mod123":
                 st.session_state.logged_in = True
                 st.session_state.role = "Moderator"
-                st.experimental_rerun()
+                st.rerun()
             else:
                 st.error("❌ Invalid credentials")
     st.stop()
@@ -86,13 +86,12 @@ if "full_data" not in st.session_state:
     st.session_state.full_data = load_data()
 df = st.session_state.full_data
 
-# --- Top Navigation ---
+# --- Navigation ---
 st.sidebar.markdown("## 🧭 Navigation")
-nav = st.sidebar.radio("Go to", ["Dashboard", "Summary Statistics"])
-st.session_state.current_page = nav
+page = st.sidebar.radio("Go to", ["Dashboard", "Summary Statistics"])
 
-# --- Summary Page ---
-if st.session_state.current_page == "Summary Statistics":
+# --- Summary Statistics Page ---
+if page == "Summary Statistics":
     st.markdown("## 📊 Summary Statistics")
     st.metric("Total Entries", len(df))
 
@@ -113,6 +112,7 @@ if st.session_state.current_page == "Summary Statistics":
             x='Year', y='Count', tooltip=['Year', 'Count']
         ).properties(title="IP Submissions Over Time"), use_container_width=True)
 
+    st.sidebar.markdown("[🏠 Back to Dashboard](#)")
     st.stop()
 
 # --- Dashboard Page ---
@@ -123,13 +123,12 @@ st.markdown("""
     </div>
 """, unsafe_allow_html=True)
 
-# --- Filters & Dashboard Interface ---
+# --- Filters ---
 st.markdown("### 🔍 Search Intellectual Property Records")
-col1, col2, col3, col4 = st.columns([3,2,2,1])
+col1, col2, col3 = st.columns([3,2,2])
 search_term = col1.text_input("Search by Author or Title")
 ip_type = col2.selectbox("Filter by IP Type", ["All"] + sorted(df['IP Type'].unique()))
 year = col3.selectbox("Filter by Year", ["All"] + sorted(df['Year'].unique()))
-col4.markdown("&nbsp;")
 
 with st.expander("📂 Advanced Filters"):
     college = st.selectbox("Filter by College", ["All"] + sorted(df['College'].unique()) if 'College' in df else ["All"])
@@ -160,6 +159,6 @@ if st.session_state.edit_mode:
     if st.button("💾 Save Changes"):
         st.session_state.edited_df = edited; st.success("✅ Saved in session.")
     if st.button("↩️ Cancel"):
-        st.session_state.edit_mode=False; st.experimental_rerun()
+        st.session_state.edit_mode=False; st.rerun()
 else:
     st.dataframe(filtered_df, use_container_width=True, height=600)
