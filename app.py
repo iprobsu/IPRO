@@ -42,14 +42,15 @@ if dark_mode:
                 color: #e8eaed !important;
                 border: 1px solid #5f6368 !important;
             }
-            label, .stTextInput label, .stSelectbox label, .stDateInput label {
+            label, .stTextInput label, .stSelectbox label, .stDateInput label, .stMultiSelect label {
                 color: #e8eaed !important;
             }
-            .st-bb, .st-bc, .stMarkdown, .stMarkdown p, .stText, .stTextInput, .stSelectbox, .stDateInput, .css-1v0mbdj {
+            .st-bb, .st-bc, .stMarkdown, .stMarkdown p, .stText, .stTextInput, .stSelectbox, .stDateInput, .css-1v0mbdj, .stMultiSelect {
                 color: #e8eaed !important;
             }
-            .css-1aumxhk, .css-1v3fvcr, .css-ffhzg2 {
+            .css-1aumxhk, .css-1v3fvcr, .css-ffhzg2, .stDataFrameContainer, .stDataEditorContainer {
                 background-color: #202124 !important;
+                color: #e8eaed !important;
             }
         </style>
     """, unsafe_allow_html=True)
