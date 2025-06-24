@@ -182,7 +182,7 @@ if author_filter:
 # --- Summary Stats Panel ---
 if stats_button and not filtered_df.empty:
     st.markdown("## 📊 Summary Statistics Panel")
-    tab1, tab2 = st.tabs(["📈 Overall", "🧩 Grouped"])
+    tab1, tab2 = st.tabs(["📈 Filtered View", "🧩 Grouped View"])
 
     with tab1:
         st.metric("Total Records", len(filtered_df))
@@ -192,6 +192,19 @@ if stats_button and not filtered_df.empty:
         group_by = st.selectbox("Group by", ["Author", "IP Type", "College", "Year"])
         grouped_df = filtered_df.groupby(group_by).size().reset_index(name="Count")
         st.bar_chart(data=grouped_df.set_index(group_by))
+
+        st.markdown("---")
+        st.markdown("### 🎯 Additional Filters")
+        extra_ip_types = st.multiselect("Filter IP Types", options=sorted(df['IP Type'].unique()))
+        extra_years = st.multiselect("Filter Years", options=sorted(df['Year'].unique()))
+
+        refined_df = grouped_df.copy()
+        if extra_ip_types and group_by == "IP Type":
+            refined_df = refined_df[refined_df['IP Type'].isin(extra_ip_types)]
+        if extra_years and group_by == "Year":
+            refined_df = refined_df[refined_df['Year'].isin(extra_years)]
+
+        st.bar_chart(data=refined_df.set_index(group_by))
 
 # --- Edit Mode Toggle ---
 if st.session_state.role == "Admin":
