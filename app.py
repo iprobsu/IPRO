@@ -21,31 +21,29 @@ if "edited_df" not in st.session_state:
 if "dark_mode" not in st.session_state:
     st.session_state.dark_mode = False
 
-# --- Sidebar ---
 # --- Sidebar Fix ---
 role_color = "#e8eaed" if st.session_state.dark_mode else "#202124"
 st.sidebar.markdown(
     f"<span style='color: {role_color}; font-weight: bold;'>🔒 Current Role: {st.session_state.role}</span>", 
     unsafe_allow_html=True
 )
-
-# Toggle Dark Mode with a styled label
 st.sidebar.markdown(
     f"<label style='color: {role_color};'>🌗 Enable Dark Mode</label>", 
     unsafe_allow_html=True
 )
 st.session_state.dark_mode = st.sidebar.toggle("", value=st.session_state.dark_mode)
+dark_mode = st.session_state.dark_mode
 
-# --- Dark Mode Styling (Chrome-like) ---
+# --- Dark Mode Styling (Enhanced) ---
 if dark_mode:
     st.markdown("""
         <style>
-            html, body {
+            html, body, [class*="main"] {
                 background-color: #202124 !important;
                 color: #e8eaed !important;
                 font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
             }
-            [class*="block-container"], [data-testid="stSidebar"] {
+            [data-testid="stSidebar"], .block-container {
                 background-color: #202124 !important;
             }
             input, select, textarea {
@@ -53,25 +51,24 @@ if dark_mode:
                 color: #e8eaed !important;
                 border: 1px solid #5f6368 !important;
             }
-            label, .stTextInput label, .stSelectbox label, .stDateInput label, .stMultiSelect label {
+            label, .stTextInput label, .stSelectbox label, .stDateInput label,
+            .stMultiSelect label, .stCheckbox label {
                 color: #e8eaed !important;
             }
-            .st-bb, .st-bc, .stMarkdown, .stMarkdown p, .stText, .stTextInput, .stSelectbox, .stDateInput, .css-1v0mbdj, .stMultiSelect {
+            .st-bb, .st-bc, .stMarkdown, .stMarkdown p,
+            .stText, .stDataFrame, .css-1v0mbdj {
                 color: #e8eaed !important;
             }
-            .css-1aumxhk, .css-1v3fvcr, .css-ffhzg2, .stDataFrameContainer, .stDataEditorContainer {
-                background-color: #202124 !important;
-                color: #e8eaed !important;
-            }
-            .stCheckbox > label {
-                color: #e8eaed !important;
+            .stButton > button {
+                background-color: #5f6368 !important;
+                color: #ffffff !important;
+                border: none;
             }
             .stSelectbox > div[data-baseweb="select"] > div {
                 background-color: #303134 !important;
             }
-            .stButton > button {
-                background-color: #5f6368;
-                color: white;
+            .stExpanderHeader {
+                color: #e8eaed !important;
             }
         </style>
     """, unsafe_allow_html=True)
