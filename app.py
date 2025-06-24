@@ -20,18 +20,16 @@ for key, default in {
     if key not in st.session_state:
         st.session_state[key] = default
 
-# --- Apply Dark Mode Styling Dynamically ---
-base_styles = """
-    html, body, [class*='main'] { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
-    [data-testid="stSidebar"] span { font-weight: bold; }
-"""
-dark_styles = """
-    html, body, [class*="main"] { background-color: #202124 !important; color: #e8eaed !important; }
-    [data-testid="stSidebar"], .block-container { background-color: #202124 !important; }
-    input, select, textarea { background-color: #303134 !important; color: #e8eaed !important; }
-    .stButton > button { background-color: #5f6368 !important; color: #ffffff !important; }
-"""
-st.markdown(f"<style>{base_styles}{dark_styles if st.session_state.dark_mode else ''}</style>", unsafe_allow_html=True)
+# --- Dark Mode Styling ---
+if st.session_state.dark_mode:
+    st.markdown("""
+        <style>
+        html, body, [class*="main"] { background-color: #202124 !important; color: #e8eaed !important; }
+        [data-testid="stSidebar"], .block-container { background-color: #202124 !important; }
+        input, select, textarea { background-color: #303134 !important; color: #e8eaed !important; }
+        .stButton > button { background-color: #5f6368 !important; color: #ffffff !important; }
+        </style>
+    """, unsafe_allow_html=True)
 
 # --- Sidebar ---
 role_color = "#e8eaed" if not st.session_state.dark_mode else "#ffffff"
@@ -49,9 +47,7 @@ if not st.session_state.logged_in:
     with st.form("login_form"):
         user = st.text_input("Username")
         pwd = st.text_input("Password", type="password")
-        login_btn = st.form_submit_button("Login")
-
-        if login_btn:
+        if st.form_submit_button("Login"):
             if user == "admin" and pwd == "admin123":
                 st.session_state.logged_in = True
                 st.session_state.role = "Admin"
@@ -61,7 +57,7 @@ if not st.session_state.logged_in:
                 st.session_state.role = "Moderator"
                 st.experimental_rerun()
             else:
-                st.error("❌ Invalid username or password")
+                st.error("❌ Invalid credentials")
     st.stop()
 
 # --- Load Data ---
@@ -78,8 +74,7 @@ def load_data():
                 all_data.append(df)
     df = pd.concat(all_data, ignore_index=True)
     df['Date Applied'] = pd.to_datetime(df.get('Date Applied', pd.NaT), errors='coerce')
-    df['Date Approved'] = pd.to_datetime(df.get('Date Approved', pd.NaT), errors='coerce')
-    df = df.fillna(value=pd.NA)
+    df.fillna('', inplace=True)
     if 'Author' in df:
         df['Author'] = df['Author'].astype(str).str.replace(';', ',').str.split(',')
         df['Author'] = df['Author'].apply(lambda lst: [x.strip() for x in lst])
@@ -93,10 +88,10 @@ df = st.session_state.full_data
 
 # --- Navigation ---
 st.sidebar.markdown("## 🧭 Navigation")
-st.session_state.current_page = st.sidebar.radio("Go to", ["Dashboard", "Summary Statistics"], index=["Dashboard", "Summary Statistics"].index(st.session_state.current_page))
+page = st.sidebar.radio("Go to", ["Dashboard", "Summary Statistics"])
 
 # --- Summary Statistics Page ---
-if st.session_state.current_page == "Summary Statistics":
+if page == "Summary Statistics":
     st.markdown("## 📊 Summary Statistics")
     st.metric("Total Entries", len(df))
 
@@ -117,6 +112,7 @@ if st.session_state.current_page == "Summary Statistics":
             x='Year', y='Count', tooltip=['Year', 'Count']
         ).properties(title="IP Submissions Over Time"), use_container_width=True)
 
+    st.sidebar.markdown("[🏠 Back to Dashboard](#)")
     st.stop()
 
 # --- Dashboard Page ---
@@ -131,12 +127,12 @@ st.markdown("""
 st.markdown("### 🔍 Search Intellectual Property Records")
 col1, col2, col3 = st.columns([3,2,2])
 search_term = col1.text_input("Search by Author or Title")
-ip_type = col2.selectbox("Filter by IP Type", ["All"] + sorted(df['IP Type'].dropna().unique().tolist()))
-year = col3.selectbox("Filter by Year", ["All"] + sorted(df['Year'].dropna().unique().tolist()))
+ip_type = col2.selectbox("Filter by IP Type", ["All"] + sorted(df['IP Type'].unique()))
+year = col3.selectbox("Filter by Year", ["All"] + sorted(df['Year'].unique()))
 
 with st.expander("📂 Advanced Filters"):
-    college = st.selectbox("Filter by College", ["All"] + sorted(df['College'].dropna().unique().tolist()) if 'College' in df else ["All"])
-    campus = st.selectbox("Filter by Campus", ["All"] + sorted(df['Campus'].dropna().unique().tolist()) if 'Campus' in df else ["All"])
+    college = st.selectbox("Filter by College", ["All"] + sorted(df['College'].unique()) if 'College' in df else ["All"])
+    campus = st.selectbox("Filter by Campus", ["All"] + sorted(df['Campus'].unique()) if 'Campus' in df else ["All"])
     date_range = st.date_input("Filter by Date Applied", [])
 
 # --- Apply Filters ---
@@ -166,4 +162,3 @@ if st.session_state.edit_mode:
         st.session_state.edit_mode=False; st.experimental_rerun()
 else:
     st.dataframe(filtered_df, use_container_width=True, height=600)
-
