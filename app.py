@@ -55,12 +55,13 @@ if not st.session_state.logged_in:
             if user == "admin" and pwd == "admin123":
                 st.session_state.logged_in = True
                 st.session_state.role = "Admin"
+                st.rerun()
             elif user == "mod" and pwd == "mod123":
                 st.session_state.logged_in = True
                 st.session_state.role = "Moderator"
+                st.rerun()
             else:
                 st.error("❌ Invalid username or password")
-            st.rerun()
     st.stop()
 
 # --- Load Data ---
@@ -77,7 +78,8 @@ def load_data():
                 all_data.append(df)
     df = pd.concat(all_data, ignore_index=True)
     df['Date Applied'] = pd.to_datetime(df.get('Date Applied', pd.NaT), errors='coerce')
-    df.fillna('', inplace=True)
+    df['Date Approved'] = pd.to_datetime(df.get('Date Approved', pd.NaT), errors='coerce')
+    df = df.fillna(value=pd.NA)
     if 'Author' in df:
         df['Author'] = df['Author'].astype(str).str.replace(';', ',').str.split(',')
         df['Author'] = df['Author'].apply(lambda lst: [x.strip() for x in lst])
