@@ -28,9 +28,9 @@ st.session_state.dark_mode = st.sidebar.toggle("🌗 Dark Mode", value=st.sessio
 
 # --- Navigation ---
 st.sidebar.markdown("---")
-if st.sidebar.button("📚 Dashboard"):
+if st.sidebar.button("🏠 Dashboard"):
     st.session_state.page = "dashboard"
-elif st.sidebar.button("📊 Summary"):
+elif st.sidebar.button("📊 Summary Stats"):
     st.session_state.page = "summary"
 
 # --- Dark Mode CSS ---
@@ -90,7 +90,6 @@ if st.session_state.page=='summary':
     st.markdown("## 📊 Summary Statistics")
     if st.button("← Back to Dashboard"):
         st.session_state.page='dashboard'; st.experimental_rerun()
-    # Compute stats on full df
     st.metric("Total Records", len(df))
     st.metric("Distinct IP Types", df['IP Type'].nunique())
     if 'IP Type' in df:
@@ -103,7 +102,6 @@ if st.session_state.page=='summary':
     st.stop()
 
 # --- Page: Dashboard ---
-# Logo & Title
 st.markdown("""
 <div style='text-align:center;'>
   <img src='https://raw.githubusercontent.com/iprobsu/IPRO/main/ipro_logo.png' width='80'/>
@@ -111,14 +109,11 @@ st.markdown("""
 </div>
 """,unsafe_allow_html=True)
 
-# Filters UI
 st.markdown("### 🔍 Search Records")
-col1,col2,col3,col4=st.columns([3,2,2,1])
+col1,col2,col3=st.columns([3,2,2])
 search=col1.text_input("Author/Title")
 type_f=col2.selectbox("IP Type",['All']+sorted(df['IP Type'].unique()))
 year_f=col3.selectbox("Year",['All']+sorted(df['Year'].unique()))
-if col4.button("📈 Summary"):
-    st.session_state.page='summary'; st.experimental_rerun()
 with st.expander("Advanced Filters"):
     college=st.selectbox("College",['All']+sorted(df['College'].unique()) if 'College' in df else ['All'])
     campus=st.selectbox("Campus",['All']+sorted(df['Campus'].unique()) if 'Campus' in df else ['All'])
