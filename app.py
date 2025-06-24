@@ -15,6 +15,8 @@ if "role" not in st.session_state:
     st.session_state.role = None
 if "edit_mode" not in st.session_state:
     st.session_state.edit_mode = False
+if "edited_df" not in st.session_state:
+    st.session_state.edited_df = None
 
 # --- Login Page ---
 if not st.session_state.logged_in:
@@ -153,76 +155,23 @@ if date_range:
         start, end = pd.to_datetime(date_range[0]), pd.to_datetime(date_range[1])
         filtered_df = filtered_df[filtered_df['Date Applied'].between(start, end)]
 
-# --- Row Coloring Setup ---
-show_colors = st.sidebar.toggle("🎨 Customize Row Colors", value=False)
-ip_color_map = {}
-enable_coloring = False
+# --- Edit Mode Toggle ---
+if st.session_state.role == "Admin":
+    edit_toggle_col = st.columns([1, 9])[0]
+    with edit_toggle_col:
+        if st.button("✏️ Edit Mode"):
+            st.session_state.edit_mode = not st.session_state.edit_mode
 
-if show_colors:
-    enable_coloring = st.sidebar.checkbox("Enable Row Coloring", value=True)
-    if 'IP Type' in filtered_df.columns:
-        ip_types = sorted(filtered_df['IP Type'].dropna().unique())
-        for ip in ip_types:
-            col1, col2 = st.sidebar.columns([1, 4])
-            with col1:
-                ip_color_map[ip] = st.color_picker("", "#ffffff", key=f"color_{ip}")
-            with col2:
-                st.sidebar.markdown(f"<div style='margin-top: 8px'>{ip}</div>", unsafe_allow_html=True)
+# --- Editable Table View ---
+if st.session_state.edit_mode:
+    st.info("🛠️ You are now in Edit Mode. Changes will not be saved unless you click 'Save Changes'.")
+    edited_df = st.data_editor(filtered_df, use_container_width=True, key="editable_table")
 
-# --- Display Table ---
-st.markdown(f"### 📄 Showing {len(filtered_df)} result{'s' if len(filtered_df) != 1 else ''}")
-
-if enable_coloring and ip_color_map:
-    def apply_color(row):
-        bg = ip_color_map.get(row['IP Type'], '#ffffff')
-        text_color = '#ffffff' if dark_mode else '#000000'
-        return [f'background-color: {bg}; color: {text_color}'] * len(row)
-
-    styled_df = filtered_df.style.apply(apply_color, axis=1)
-    st.markdown(styled_df.to_html(escape=False), unsafe_allow_html=True)
+    if st.button("💾 Save Changes"):
+        st.session_state.edited_df = edited_df
+        st.success("✅ Changes have been saved (in session only).")
+    if st.button("↩️ Cancel Changes"):
+        st.session_state.edit_mode = False
+        st.rerun()
 else:
     st.dataframe(filtered_df, use_container_width=True, height=600)
-
-# --- Export Section ---
-if st.session_state.role in ["Moderator", "Admin"]:
-    st.markdown("### ⬇️ Export Options")
-
-    ip_options = sorted(filtered_df["IP Type"].dropna().unique())
-    selected_types = st.multiselect("📑 Select IP Types to include in download", ip_options, default=ip_options)
-
-    export_df = filtered_df[filtered_df["IP Type"].isin(selected_types)]
-
-    if export_df.empty:
-        st.warning("⚠️ No data to export with the selected IP Types.")
-    else:
-        to_export = export_df.copy()
-        output = io.BytesIO()
-        wb = Workbook()
-        ws = wb.active
-        ws.title = "Filtered IP Records"
-
-        # Write header
-        ws.append(list(to_export.columns))
-
-        # Row-by-row writing with optional coloring
-        for idx, row in to_export.iterrows():
-            values = list(row.values)
-            ws.append(values)
-
-            if enable_coloring:
-                ip = row.get("IP Type", "")
-                hex_color = ip_color_map.get(ip, "#FFFFFF").replace("#", "")
-                fill = PatternFill(start_color=hex_color, end_color=hex_color, fill_type="solid")
-                for col in range(1, len(values) + 1):
-                    ws.cell(row=idx + 2, column=col).fill = fill
-
-        # Finalize and serve download
-        wb.save(output)
-        output.seek(0)
-
-        st.download_button(
-            label="⬇️ Download as Excel (With Colors)" if enable_coloring else "⬇️ Download as Excel",
-            data=output,
-            file_name="filtered_ip_data.xlsx",
-            mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
-        )
