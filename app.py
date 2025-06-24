@@ -51,11 +51,11 @@ if not st.session_state.logged_in:
             if user == "admin" and pwd == "admin123":
                 st.session_state.logged_in = True
                 st.session_state.role = "Admin"
-                st.rerun()
+                st.experimental_rerun()
             elif user == "mod" and pwd == "mod123":
                 st.session_state.logged_in = True
                 st.session_state.role = "Moderator"
-                st.rerun()
+                st.experimental_rerun()
             else:
                 st.error("❌ Invalid credentials")
     st.stop()
@@ -87,7 +87,8 @@ if "full_data" not in st.session_state:
 df = st.session_state.full_data
 
 # --- Top Navigation ---
-nav = st.selectbox("🔎 Navigate", ["Dashboard", "Summary Statistics"], index=(0 if st.session_state.current_page == "Dashboard" else 1))
+st.sidebar.markdown("## 🧭 Navigation")
+nav = st.sidebar.radio("Go to", ["Dashboard", "Summary Statistics"])
 st.session_state.current_page = nav
 
 # --- Summary Page ---
@@ -159,7 +160,6 @@ if st.session_state.edit_mode:
     if st.button("💾 Save Changes"):
         st.session_state.edited_df = edited; st.success("✅ Saved in session.")
     if st.button("↩️ Cancel"):
-        st.session_state.edit_mode=False; st.rerun()
+        st.session_state.edit_mode=False; st.experimental_rerun()
 else:
     st.dataframe(filtered_df, use_container_width=True, height=600)
-
