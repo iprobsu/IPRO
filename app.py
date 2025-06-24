@@ -26,7 +26,7 @@ dark_mode = st.session_state.dark_mode
 sidebar_font_color = "#ffffff" if dark_mode else "#000000"
 st.sidebar.markdown(f"<span style='color: {sidebar_font_color}'>🔒 Current Role: {st.session_state.role}</span>", unsafe_allow_html=True)
 
-# --- Dark Mode Styling (Chrome-like) ---
+# --- Full Page Dark Mode Styling ---
 if dark_mode:
     st.markdown("""
         <style>
@@ -35,7 +35,7 @@ if dark_mode:
                 color: #e8eaed !important;
                 font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
             }
-            [class*="block-container"], [data-testid="stSidebar"], .stForm, .stDataFrameContainer, .stDataEditorContainer {
+            [class*="block-container"], [data-testid="stSidebar"], .stForm, .stDataFrameContainer, .stDataEditorContainer, .stExpander, .stSelectbox, .stTextInput, .stDateInput, .stMultiSelect, .stButton {
                 background-color: #202124 !important;
                 color: #e8eaed !important;
             }
@@ -47,11 +47,13 @@ if dark_mode:
             label, .stTextInput label, .stSelectbox label, .stDateInput label, .stMultiSelect label {
                 color: #e8eaed !important;
             }
-            .st-bb, .st-bc, .stMarkdown, .stMarkdown p, .stText, .stTextInput, .stSelectbox, .stDateInput, .css-1v0mbdj, .stMultiSelect {
-                color: #e8eaed !important;
-            }
             .stCheckbox > label, .stRadio > label {
                 color: #e8eaed !important;
+            }
+            .css-1v0mbdj, .css-1kyxreq, .stMultiSelect .css-1xarl3l, .css-1y4p8pa, .stButton button {
+                background-color: #303134 !important;
+                color: #e8eaed !important;
+                border: 1px solid #5f6368 !important;
             }
         </style>
     """, unsafe_allow_html=True)
