@@ -34,7 +34,7 @@ st.sidebar.markdown(
 st.session_state.dark_mode = st.sidebar.toggle("", value=st.session_state.dark_mode)
 dark_mode = st.session_state.dark_mode
 
-# --- Dark Mode Styling (Enhanced) ---
+# --- Dark Mode Styling ---
 if dark_mode:
     st.markdown("""
         <style>
