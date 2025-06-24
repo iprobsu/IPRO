@@ -102,44 +102,68 @@ if st.session_state.page=='summary':
     st.stop()
 
 # --- Page: Dashboard ---
-st.markdown("""
-<div style='text-align:center;'>
-  <img src='https://raw.githubusercontent.com/iprobsu/IPRO/main/ipro_logo.png' width='80'/>
-  <h1>📚 IP Masterlist Dashboard</h1>
-</div>
-""",unsafe_allow_html=True)
-
-st.markdown("### 🔍 Search Records")
-col1,col2,col3=st.columns([3,2,2])
-search=col1.text_input("Author/Title")
-type_f=col2.selectbox("IP Type",['All']+sorted(df['IP Type'].unique()))
-year_f=col3.selectbox("Year",['All']+sorted(df['Year'].unique()))
-with st.expander("Advanced Filters"):
-    college=st.selectbox("College",['All']+sorted(df['College'].unique()) if 'College' in df else ['All'])
-    campus=st.selectbox("Campus",['All']+sorted(df['Campus'].unique()) if 'Campus' in df else ['All'])
-    date_rng=st.date_input("Date Applied",[])
-
-# Apply filters
-df_f=df.copy()
-if search: df_f=df_f[df_f['Author'].astype(str).str.contains(search,case=False)|df_f['Title'].astype(str).str.contains(search,case=False)]
-if type_f!='All': df_f=df_f[df_f['IP Type']==type_f]
-if year_f!='All': df_f=df_f[df_f['Year']==year_f]
-if college!='All': df_f=df_f[df_f['College']==college]
-if campus!='All': df_f=df_f[df_f['Campus']==campus]
-if date_rng:
-    if len(date_rng)==1: df_f=df_f[df_f['Date Applied']>=pd.to_datetime(date_rng[0])]
-    else: df_f=df_f[df_f['Date Applied'].between(pd.to_datetime(date_rng[0]),pd.to_datetime(date_rng[1]))]
-
-# Editable table
-def dashboard_table():
-    if st.session_state.role=='Admin' and st.button('✏️ Edit'):
-        st.session_state.edit_mode=not st.session_state.edit_mode
-    if st.session_state.edit_mode:
-        edited=st.data_editor(df_f, use_container_width=True)
-        if st.button('💾 Save'): st.session_state.edited_df=edited; st.success('Saved')
-        if st.button('↩️ Cancel'): st.session_state.edit_mode=False; st.experimental_rerun()
-    else:
-        st.dataframe(df_f,use_container_width=True,height=600)
-
 if st.session_state.page == 'dashboard':
-    dashboard_table()
+    # Logo & Title
+    st.markdown("""
+    <div style='text-align:center;'>
+      <img src='https://raw.githubusercontent.com/iprobsu/IPRO/main/ipro_logo.png' width='80'/>
+      <h1>📚 IP Masterlist Dashboard</h1>
+    </div>
+    """, unsafe_allow_html=True)
+
+    # Search & Filter UI
+    st.markdown("### 🔍 Search Records")
+    col1, col2, col3 = st.columns([3, 2, 2])
+    search_term = col1.text_input("Search by Author or Title")
+    ip_type = col2.selectbox("Filter by IP Type", ["All"] + sorted(df['IP Type'].unique()))
+    year_sel = col3.selectbox("Filter by Year", ["All"] + sorted(df['Year'].unique()))
+    with st.expander("Advanced Filters"):
+        college_sel = st.selectbox(
+            "Filter by College", ["All"] + sorted(df['College'].unique()) if 'College' in df else ["All"]
+        )
+        campus_sel = st.selectbox(
+            "Filter by Campus", ["All"] + sorted(df['Campus'].unique()) if 'Campus' in df else ["All"]
+        )
+        date_range = st.date_input("Filter by Date Applied", [])
+
+    # Apply Filters
+    df_f = df.copy()
+    if search_term:
+        mask = df_f['Author'].astype(str).str.contains(search_term, case=False, na=False)
+        if 'Title' in df_f.columns:
+            mask |= df_f['Title'].astype(str).str.contains(search_term, case=False, na=False)
+        df_f = df_f[mask]
+    if ip_type != "All":
+        df_f = df_f[df_f['IP Type'] == ip_type]
+    if year_sel != "All":
+        df_f = df_f[df_f['Year'] == year_sel]
+    if 'College' in df and college_sel != "All":
+        df_f = df_f[df_f['College'] == college_sel]
+    if 'Campus' in df and campus_sel != "All":
+        df_f = df_f[df_f['Campus'] == campus_sel]
+    if date_range:
+        if len(date_range) == 1:
+            df_f = df_f[df_f['Date Applied'] >= pd.to_datetime(date_range[0])]
+        elif len(date_range) == 2:
+            start, end = pd.to_datetime(date_range[0]), pd.to_datetime(date_range[1])
+            df_f = df_f[df_f['Date Applied'].between(start, end)]
+
+    # Editable Table View
+    if st.session_state.role == "Admin":
+        if st.button("✏️ Edit Mode"):
+            st.session_state.edit_mode = not st.session_state.edit_mode
+
+    if st.session_state.edit_mode:
+        st.info("🛠️ Edit Mode enabled. Save or Cancel your changes.")
+        edited = st.data_editor(df_f, use_container_width=True)
+        col_save, col_cancel = st.columns([1,1])
+        with col_save:
+            if st.button("💾 Save Changes"):
+                st.session_state.edited_df = edited
+                st.success("✅ Changes saved in session.")
+        with col_cancel:
+            if st.button("↩️ Cancel"):
+                st.session_state.edit_mode = False
+                st.experimental_rerun()
+    else:
+        st.dataframe(df_f, use_container_width=True, height=600)
