@@ -25,28 +25,31 @@ st.sidebar.markdown(f"**🔒 Current Role:** {st.session_state.role}")
 st.session_state.dark_mode = st.sidebar.toggle("🌗 Enable Dark Mode", value=st.session_state.dark_mode)
 dark_mode = st.session_state.dark_mode
 
-# --- Dark Mode Styling ---
+# --- Dark Mode Styling (Chrome-like) ---
 if dark_mode:
     st.markdown("""
         <style>
             html, body {
-                background-color: #121212 !important;
-                color: #e0e0e0 !important;
-                font-family: 'Roboto', sans-serif;
+                background-color: #202124 !important;
+                color: #e8eaed !important;
+                font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
             }
             [class*="block-container"], [data-testid="stSidebar"] {
-                background-color: #121212 !important;
+                background-color: #202124 !important;
             }
             input, select, textarea {
-                background-color: #1e1e1e !important;
-                color: #e0e0e0 !important;
-                border-color: #333 !important;
+                background-color: #303134 !important;
+                color: #e8eaed !important;
+                border: 1px solid #5f6368 !important;
             }
             label, .stTextInput label, .stSelectbox label, .stDateInput label {
-                color: #e0e0e0 !important;
+                color: #e8eaed !important;
             }
-            .css-1v0mbdj, .css-10trblm, .stMarkdown p, .st-bx {
-                color: #e0e0e0 !important;
+            .st-bb, .st-bc, .stMarkdown, .stMarkdown p, .stText, .stTextInput, .stSelectbox, .stDateInput, .css-1v0mbdj {
+                color: #e8eaed !important;
+            }
+            .css-1aumxhk, .css-1v3fvcr, .css-ffhzg2 {
+                background-color: #202124 !important;
             }
         </style>
     """, unsafe_allow_html=True)
@@ -56,7 +59,7 @@ if not st.session_state.logged_in:
     st.markdown("""
         <div style="max-width: 400px; margin: 100px auto; padding: 20px; text-align: center; background: transparent;">
             <img src="https://raw.githubusercontent.com/iprobsu/IPRO/main/ipro_logo.png" alt="IPRO Logo" width="80" style="filter: drop-shadow(0 0 10px #00ffaa); animation: bounce 2s infinite; margin-bottom: 20px;" />
-            <h2>🔐 IPRO Dashboard Login</h2>
+            <h2 style="color: inherit;">🔐 IPRO Dashboard Login</h2>
         </div>
         <style>
             @keyframes bounce {
