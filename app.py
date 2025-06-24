@@ -2,6 +2,7 @@ import streamlit as st
 import pandas as pd
 import os
 import io
+import altair as alt
 from openpyxl import Workbook
 from openpyxl.styles import PatternFill
 
@@ -55,6 +56,9 @@ if dark_mode:
             }
             .stCheckbox > label {
                 color: #e8eaed !important;
+            }
+            .stSelectbox > div[data-baseweb="select"] > div {
+                background-color: #303134 !important;
             }
         </style>
     """, unsafe_allow_html=True)
@@ -134,13 +138,15 @@ df = load_data()
 
 # --- Filters ---
 st.markdown("### 🔍 Search Intellectual Property Records")
-col1, col2, col3 = st.columns([3, 2, 2])
+col1, col2, col3, col4 = st.columns([3, 2, 2, 1])
 with col1:
     search_term = st.text_input("Search by Author or Title")
 with col2:
     ip_type = st.selectbox("Filter by IP Type", ["All"] + sorted(df['IP Type'].unique()))
 with col3:
     year = st.selectbox("Sort by Year", ["All"] + sorted(df['Year'].unique()))
+with col4:
+    stats_button = st.button("📈")
 
 with st.expander("📂 Advanced Filters"):
     col4, col5, col6 = st.columns(3)
@@ -172,6 +178,39 @@ if date_range:
     elif len(date_range) == 2:
         start, end = pd.to_datetime(date_range[0]), pd.to_datetime(date_range[1])
         filtered_df = filtered_df[filtered_df['Date Applied'].between(start, end)]
+
+# --- Summary Stats Panel ---
+if stats_button and not filtered_df.empty:
+    st.markdown("## 📊 Summary Statistics Panel")
+    st.markdown("Total Records: **{}**".format(len(filtered_df)))
+
+    st.markdown("### 🎯 KPIs")
+    kpi1, kpi2, kpi3 = st.columns(3)
+    with kpi1:
+        st.metric(label="Total Entries", value=len(filtered_df))
+    with kpi2:
+        most_common = filtered_df['IP Type'].mode()[0] if not filtered_df.empty else "N/A"
+        st.metric(label="Most Common IP Type", value=most_common)
+    with kpi3:
+        top_author = filtered_df['Author'].value_counts().idxmax() if 'Author' in filtered_df else "N/A"
+        st.metric(label="Top Author", value=top_author)
+
+    if 'IP Type' in filtered_df:
+        st.altair_chart(alt.Chart(filtered_df).mark_bar().encode(
+            x='IP Type', y='count()', color='IP Type', tooltip=['IP Type', 'count()']
+        ).properties(title="IP Type Distribution"), use_container_width=True)
+
+    if 'College' in filtered_df:
+        st.altair_chart(alt.Chart(filtered_df).mark_arc().encode(
+            theta='count()', color='College', tooltip=['College', 'count()']
+        ).properties(title="Distribution by College"), use_container_width=True)
+
+    if 'Year' in filtered_df:
+        year_df = filtered_df['Year'].value_counts().reset_index()
+        year_df.columns = ['Year', 'Count']
+        st.altair_chart(alt.Chart(year_df).mark_line(point=True).encode(
+            x='Year', y='Count', tooltip=['Year', 'Count']
+        ).properties(title="IP Submissions Over Time"), use_container_width=True)
 
 # --- Edit Mode Toggle ---
 if st.session_state.role == "Admin":
