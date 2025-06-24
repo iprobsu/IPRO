@@ -20,19 +20,21 @@ if "edited_df" not in st.session_state:
     st.session_state.edited_df = None
 if "dark_mode" not in st.session_state:
     st.session_state.dark_mode = False
+if "page" not in st.session_state:
+    st.session_state.page = "dashboard"
 
 # --- Sidebar Fix ---
 role_color = "#e8eaed" if st.session_state.dark_mode else "#202124"
-st.sidebar.markdown(
-    f"<span style='color: {role_color}; font-weight: bold;'>🔒 Current Role: {st.session_state.role}</span>", 
-    unsafe_allow_html=True
-)
-st.sidebar.markdown(
-    f"<label style='color: {role_color};'>🌗 Enable Dark Mode</label>", 
-    unsafe_allow_html=True
-)
+st.sidebar.markdown(f"<span style='color: {role_color}; font-weight: bold;'>🔒 Current Role: {st.session_state.role}</span>", unsafe_allow_html=True)
+st.sidebar.markdown(f"<label style='color: {role_color};'>🌗 Enable Dark Mode</label>", unsafe_allow_html=True)
 st.session_state.dark_mode = st.sidebar.toggle("", value=st.session_state.dark_mode)
 dark_mode = st.session_state.dark_mode
+
+st.sidebar.markdown("---")
+if st.sidebar.button("📚 Dashboard"):
+    st.session_state.page = "dashboard"
+if st.sidebar.button("📈 Summary Statistics"):
+    st.session_state.page = "summary"
 
 # --- Dark Mode Styling ---
 if dark_mode:
@@ -76,9 +78,9 @@ if dark_mode:
 # --- Login Page ---
 if not st.session_state.logged_in:
     st.markdown("""
-        <div style="max-width: 400px; margin: 100px auto; padding: 20px; text-align: center; background: transparent;">
-            <img src="https://raw.githubusercontent.com/iprobsu/IPRO/main/ipro_logo.png" alt="IPRO Logo" width="80" style="filter: drop-shadow(0 0 10px #00ffaa); animation: bounce 2s infinite; margin-bottom: 20px;" />
-            <h2 style="color: inherit;">🔐 IPRO Dashboard Login</h2>
+        <div style='max-width: 400px; margin: 100px auto; padding: 20px; text-align: center;'>
+            <img src='https://raw.githubusercontent.com/iprobsu/IPRO/main/ipro_logo.png' width='80' style='filter: drop-shadow(0 0 10px #00ffaa); animation: bounce 2s infinite; margin-bottom: 20px;' />
+            <h2>🔐 IPRO Dashboard Login</h2>
         </div>
         <style>
             @keyframes bounce {
@@ -92,7 +94,6 @@ if not st.session_state.logged_in:
         username = st.text_input("Username")
         password = st.text_input("Password", type="password")
         submitted = st.form_submit_button("Login")
-
         if submitted:
             if username == "admin" and password == "admin123":
                 st.session_state.logged_in = True
@@ -105,20 +106,6 @@ if not st.session_state.logged_in:
             else:
                 st.error("❌ Invalid username or password")
     st.stop()
-
-# --- Logo and Title ---
-st.markdown("""
-    <div style="text-align: center;">
-        <img src="https://raw.githubusercontent.com/iprobsu/IPRO/main/ipro_logo.png" alt="IPRO Logo" width="80" style="filter: drop-shadow(0 0 10px #00ffaa); animation: bounce 2s infinite;" />
-        <h1>📚 IP Masterlist Dashboard</h1>
-    </div>
-    <style>
-        @keyframes bounce {
-            0%, 100% { transform: translateY(0); }
-            50% { transform: translateY(-10px); }
-        }
-    </style>
-""", unsafe_allow_html=True)
 
 # --- Load Data ---
 def load_data():
@@ -146,53 +133,13 @@ def load_data():
 
 df = load_data()
 
-# --- Filters ---
-st.markdown("### 🔍 Search Intellectual Property Records")
-col1, col2, col3, col4 = st.columns([3, 2, 2, 1])
-with col1:
-    search_term = st.text_input("Search by Author or Title")
-with col2:
-    ip_type = st.selectbox("Filter by IP Type", ["All"] + sorted(df['IP Type'].unique()))
-with col3:
-    year = st.selectbox("Sort by Year", ["All"] + sorted(df['Year'].unique()))
-with col4:
-    stats_button = st.button("📈")
+# --- Page Routing ---
+if st.session_state.page == "dashboard":
+    st.markdown("## 📚 IP Dashboard (Under Construction or Add Dashboard Logic Here)")
 
-with st.expander("📂 Advanced Filters"):
-    col4, col5, col6 = st.columns(3)
-    with col4:
-        college = st.selectbox("Filter by College", ["All"] + sorted(df['College'].unique()) if 'College' in df else ["All"])
-    with col5:
-        campus = st.selectbox("Filter by Campus", ["All"] + sorted(df['Campus'].unique()) if 'Campus' in df else ["All"])
-    with col6:
-        date_range = st.date_input("Filter by Date Applied", [])
-
-# --- Apply Filters ---
-filtered_df = df.copy()
-if search_term:
-    filtered_df = filtered_df[
-        filtered_df['Author'].astype(str).str.contains(search_term, case=False, na=False) |
-        filtered_df['Title'].astype(str).str.contains(search_term, case=False, na=False)
-    ]
-if ip_type != "All":
-    filtered_df = filtered_df[filtered_df['IP Type'] == ip_type]
-if year != "All":
-    filtered_df = filtered_df[filtered_df['Year'] == year]
-if 'College' in df.columns and college != "All":
-    filtered_df = filtered_df[filtered_df['College'] == college]
-if 'Campus' in df.columns and campus != "All":
-    filtered_df = filtered_df[filtered_df['Campus'] == campus]
-if date_range:
-    if len(date_range) == 1:
-        filtered_df = filtered_df[filtered_df['Date Applied'] >= pd.to_datetime(date_range[0])]
-    elif len(date_range) == 2:
-        start, end = pd.to_datetime(date_range[0]), pd.to_datetime(date_range[1])
-        filtered_df = filtered_df[filtered_df['Date Applied'].between(start, end)]
-
-# --- Summary Stats Panel ---
-if stats_button and not filtered_df.empty:
-    st.markdown("## 📊 Summary Statistics Panel")
-    st.markdown("Total Records: **{}**".format(len(filtered_df)))
+elif st.session_state.page == "summary":
+    st.markdown("## 📈 Summary Statistics Panel")
+    filtered_df = df.copy()
 
     st.markdown("### 🎯 KPIs")
     kpi1, kpi2, kpi3 = st.columns(3)
@@ -221,24 +168,3 @@ if stats_button and not filtered_df.empty:
         st.altair_chart(alt.Chart(year_df).mark_line(point=True).encode(
             x='Year', y='Count', tooltip=['Year', 'Count']
         ).properties(title="IP Submissions Over Time"), use_container_width=True)
-
-# --- Edit Mode Toggle ---
-if st.session_state.role == "Admin":
-    edit_toggle_col = st.columns([1, 9])[0]
-    with edit_toggle_col:
-        if st.button("✏️ Edit Mode"):
-            st.session_state.edit_mode = not st.session_state.edit_mode
-
-# --- Editable Table View ---
-if st.session_state.edit_mode:
-    st.info("🛠️ You are now in Edit Mode. Changes will not be saved unless you click 'Save Changes'.")
-    edited_df = st.data_editor(filtered_df, use_container_width=True, key="editable_table")
-
-    if st.button("💾 Save Changes"):
-        st.session_state.edited_df = edited_df
-        st.success("✅ Changes have been saved (in session only).")
-    if st.button("↩️ Cancel Changes"):
-        st.session_state.edit_mode = False
-        st.rerun()
-else:
-    st.dataframe(filtered_df, use_container_width=True, height=600)
