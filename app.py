@@ -181,10 +181,10 @@ if date_range:
         start, end = pd.to_datetime(date_range[0]), pd.to_datetime(date_range[1])
         filtered_df = filtered_df[filtered_df['Date Applied'].between(start, end)]
 
-# --- Summary Stats Always Shown ---
-st.markdown("## 📊 Summary Statistics (Filtered)")
+# --- Summary Stats Panel Always Visible ---
+st.markdown("## 📊 Summary Statistics")
 if not filtered_df.empty:
-    st.markdown(f"Total Records: **{len(filtered_df)}**")
+    st.markdown(f"**Filtered Total Records:** {len(filtered_df)}")
 
     kpi1, kpi2, kpi3 = st.columns(3)
     with kpi1:
