@@ -1,7 +1,6 @@
 import streamlit as st
 import pandas as pd
 import os
-import io
 import altair as alt
 from openpyxl import Workbook
 from openpyxl.styles import PatternFill
@@ -21,9 +20,9 @@ if "edited_df" not in st.session_state:
 if "dark_mode" not in st.session_state:
     st.session_state.dark_mode = False
 if "page" not in st.session_state:
-    st.session_state.page = "dashboard"
+    st.session_state.page = "home"
 
-# --- Sidebar Fix ---
+# --- Sidebar Styling and Controls ---
 role_color = "#e8eaed" if st.session_state.dark_mode else "#202124"
 st.sidebar.markdown(f"<span style='color: {role_color}; font-weight: bold;'>🔒 Current Role: {st.session_state.role}</span>", unsafe_allow_html=True)
 st.sidebar.markdown(f"<label style='color: {role_color};'>🌗 Enable Dark Mode</label>", unsafe_allow_html=True)
@@ -31,12 +30,15 @@ st.session_state.dark_mode = st.sidebar.toggle("", value=st.session_state.dark_m
 dark_mode = st.session_state.dark_mode
 
 st.sidebar.markdown("---")
+st.sidebar.markdown("## 📂 Navigation")
+if st.sidebar.button("🏠 Home"):
+    st.session_state.page = "home"
 if st.sidebar.button("📚 Dashboard"):
     st.session_state.page = "dashboard"
 if st.sidebar.button("📈 Summary Statistics"):
     st.session_state.page = "summary"
 
-# --- Dark Mode Styling ---
+# --- Dark Mode CSS ---
 if dark_mode:
     st.markdown("""
         <style>
@@ -133,9 +135,18 @@ def load_data():
 
 df = load_data()
 
-# --- Page Routing ---
-if st.session_state.page == "dashboard":
-    st.markdown("## 📚 IP Dashboard (Under Construction or Add Dashboard Logic Here)")
+# --- Routing ---
+if st.session_state.page == "home":
+    st.markdown("""
+        <div style='text-align: center;'>
+            <img src='https://raw.githubusercontent.com/iprobsu/IPRO/main/ipro_logo.png' width='80' style='filter: drop-shadow(0 0 10px #00ffaa); animation: bounce 2s infinite;' />
+            <h1>🏠 Welcome to the IP Masterlist System</h1>
+            <p style='font-size: 18px;'>Use the sidebar to navigate between features like the Dashboard and Statistics panel.</p>
+        </div>
+    """, unsafe_allow_html=True)
+
+elif st.session_state.page == "dashboard":
+    st.markdown("## 📚 IP Dashboard (Coming Soon: Add Full Dashboard Features Here)")
 
 elif st.session_state.page == "summary":
     st.markdown("## 📈 Summary Statistics Panel")
