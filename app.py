@@ -1,6 +1,6 @@
 import streamlit as st
 import pandas as pd
-import plotly.express as px
+import altair as alt
 
 # -- Example Stats Section (Integrated into the App) --
 st.markdown("## 📊 Dashboard Statistics")
@@ -13,16 +13,24 @@ with stats_expander:
         ip_type_counts = df['IP Type'].value_counts().reset_index()
         ip_type_counts.columns = ['IP Type', 'Count']
         st.markdown("**Total Count by IP Type**")
-        fig1 = px.bar(ip_type_counts, x='IP Type', y='Count', color='IP Type', height=400)
-        st.plotly_chart(fig1, use_container_width=True)
+        chart1 = alt.Chart(ip_type_counts).mark_bar().encode(
+            x=alt.X('IP Type', sort='-y'),
+            y='Count',
+            color='IP Type'
+        ).properties(height=400)
+        st.altair_chart(chart1, use_container_width=True)
 
     with col2:
         if 'College' in df.columns:
             college_counts = df['College'].value_counts().reset_index()
             college_counts.columns = ['College', 'Count']
             st.markdown("**Total Count by College**")
-            fig2 = px.pie(college_counts, names='College', values='Count', height=400)
-            st.plotly_chart(fig2, use_container_width=True)
+            chart2 = alt.Chart(college_counts).mark_arc(innerRadius=50).encode(
+                theta='Count',
+                color='College',
+                tooltip=['College', 'Count']
+            ).properties(height=400)
+            st.altair_chart(chart2, use_container_width=True)
 
     st.divider()
     col3, col4 = st.columns(2)
@@ -31,16 +39,23 @@ with stats_expander:
             year_counts = df['Year'].value_counts().sort_index().reset_index()
             year_counts.columns = ['Year', 'Count']
             st.markdown("**IP Submissions Over the Years**")
-            fig3 = px.line(year_counts, x='Year', y='Count', markers=True, height=400)
-            st.plotly_chart(fig3, use_container_width=True)
+            chart3 = alt.Chart(year_counts).mark_line(point=True).encode(
+                x='Year',
+                y='Count'
+            ).properties(height=400)
+            st.altair_chart(chart3, use_container_width=True)
 
     with col4:
         if 'Campus' in df.columns:
             campus_counts = df['Campus'].value_counts().reset_index()
             campus_counts.columns = ['Campus', 'Count']
             st.markdown("**Distribution by Campus**")
-            fig4 = px.bar(campus_counts, x='Campus', y='Count', color='Campus', height=400)
-            st.plotly_chart(fig4, use_container_width=True)
+            chart4 = alt.Chart(campus_counts).mark_bar().encode(
+                x=alt.X('Campus', sort='-y'),
+                y='Count',
+                color='Campus'
+            ).properties(height=400)
+            st.altair_chart(chart4, use_container_width=True)
 
     # Interactive Filtering (Optional)
     st.markdown("### 🔍 Custom Filtered Stats")
@@ -57,7 +72,10 @@ with stats_expander:
         st.markdown("**Filtered IP Count by Year**")
         filtered_stats = custom_df['Year'].value_counts().sort_index().reset_index()
         filtered_stats.columns = ['Year', 'Count']
-        fig5 = px.area(filtered_stats, x='Year', y='Count', markers=True, height=300)
-        st.plotly_chart(fig5, use_container_width=True)
+        chart5 = alt.Chart(filtered_stats).mark_area(line=True, point=True).encode(
+            x='Year',
+            y='Count'
+        ).properties(height=300)
+        st.altair_chart(chart5, use_container_width=True)
     else:
         st.warning("No matching records for the selected filters.")
