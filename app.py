@@ -31,7 +31,7 @@ dark_mode = st.session_state.dark_mode
 if dark_mode:
     st.markdown("""
         <style>
-            html, body, [class*="css"] {
+            html, body {
                 background-color: #202124 !important;
                 color: #e8eaed !important;
                 font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
@@ -116,19 +116,100 @@ st.markdown("""
 
 # --- Load Data ---
 def load_data():
-    return pd.DataFrame(columns=["Title", "Author", "Year", "IP Type", "College", "Campus", "Date Applied", "Status"])
+    data_dir = "data"
+    all_data = []
+    for filename in os.listdir(data_dir):
+        if filename.endswith(".xlsx"):
+            year = filename[:4]
+            path = os.path.join(data_dir, filename)
+            xls = pd.read_excel(path, sheet_name=None, engine="openpyxl")
+            for sheet_name, df in xls.items():
+                df["Year"] = year
+                df["IP Type"] = sheet_name
+                df["Source File"] = filename
+                all_data.append(df)
+    df = pd.concat(all_data, ignore_index=True)
+    df['Date Applied'] = pd.to_datetime(df.get('Date Applied', pd.NaT), errors='coerce')
+    df['Date Approved'] = pd.to_datetime(df.get('Date Approved', pd.NaT), errors='coerce')
+    df.fillna('', inplace=True)
+    if 'Author' in df.columns:
+        df['Author'] = df['Author'].astype(str).str.replace(';', ',').str.split(',')
+        df['Author'] = df['Author'].apply(lambda x: [a.strip() for a in x])
+        df = df.explode('Author').reset_index(drop=True)
+    return df
 
 df = load_data()
 
-# --- Filters UI Fixes for Dark Mode ---
-st.markdown("""
-    <style>
-        .stTextInput, .stSelectbox, .stDateInput, .stMultiSelect, .stSlider {
-            background-color: inherit !important;
-            color: inherit !important;
-        }
-    </style>
-""", unsafe_allow_html=True)
+# --- Filters ---
+st.markdown("### 🔍 Search Intellectual Property Records")
+col1, col2, col3, col4 = st.columns([3, 2, 2, 1])
+with col1:
+    search_term = st.text_input("Search by Author or Title")
+with col2:
+    ip_type = st.selectbox("Filter by IP Type", ["All"] + sorted(df['IP Type'].unique()))
+with col3:
+    year = st.selectbox("Sort by Year", ["All"] + sorted(df['Year'].unique()))
+with col4:
+    stats_button = st.button("📈")
 
-# --- Display Fallback ---
-st.dataframe(df)
+with st.expander("📂 Advanced Filters"):
+    col4, col5, col6 = st.columns(3)
+    with col4:
+        college = st.multiselect("Filter by College", sorted(df['College'].unique()) if 'College' in df else [])
+    with col5:
+        campus = st.multiselect("Filter by Campus", sorted(df['Campus'].unique()) if 'Campus' in df else [])
+    with col6:
+        author_filter = st.multiselect("Filter by Author", sorted(df['Author'].dropna().unique()))
+
+# --- Apply Filters ---
+filtered_df = df.copy()
+if search_term:
+    filtered_df = filtered_df[
+        filtered_df['Author'].astype(str).str.contains(search_term, case=False, na=False) |
+        filtered_df['Title'].astype(str).str.contains(search_term, case=False, na=False)
+    ]
+if ip_type != "All":
+    filtered_df = filtered_df[filtered_df['IP Type'] == ip_type]
+if year != "All":
+    filtered_df = filtered_df[filtered_df['Year'] == year]
+if college:
+    filtered_df = filtered_df[filtered_df['College'].isin(college)]
+if campus:
+    filtered_df = filtered_df[filtered_df['Campus'].isin(campus)]
+if author_filter:
+    filtered_df = filtered_df[filtered_df['Author'].isin(author_filter)]
+
+# --- Summary Stats Panel ---
+if stats_button and not filtered_df.empty:
+    st.markdown("## 📊 Summary Statistics Panel")
+    tab1, tab2 = st.tabs(["📈 Overall", "🧩 Grouped"])
+
+    with tab1:
+        st.metric("Total Records", len(filtered_df))
+        st.bar_chart(filtered_df['IP Type'].value_counts())
+
+    with tab2:
+        group_by = st.selectbox("Group by", ["Author", "IP Type", "College", "Year"])
+        grouped_df = filtered_df.groupby(group_by).size().reset_index(name="Count")
+        st.bar_chart(data=grouped_df.set_index(group_by))
+
+# --- Edit Mode Toggle ---
+if st.session_state.role == "Admin":
+    edit_toggle_col = st.columns([1, 9])[0]
+    with edit_toggle_col:
+        if st.button("✏️ Edit Mode"):
+            st.session_state.edit_mode = not st.session_state.edit_mode
+
+# --- Editable Table View ---
+if st.session_state.edit_mode:
+    st.info("🛠️ You are now in Edit Mode. Changes will not be saved unless you click 'Save Changes'.")
+    edited_df = st.data_editor(filtered_df, use_container_width=True, key="editable_table")
+
+    if st.button("💾 Save Changes"):
+        st.session_state.edited_df = edited_df
+        st.success("✅ Changes have been saved (in session only).")
+    if st.button("↩️ Cancel Changes"):
+        st.session_state.edit_mode = False
+        st.rerun()
+else:
+    st.dataframe(filtered_df, use_container_width=True, height=600)
