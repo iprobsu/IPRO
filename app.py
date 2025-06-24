@@ -9,37 +9,53 @@ from openpyxl.styles import PatternFill
 st.set_page_config(page_title="IP Masterlist Dashboard", layout="wide")
 
 # --- Session State Setup ---
-if "logged_in" not in st.session_state:
-    st.session_state.logged_in = False
-if "role" not in st.session_state:
-    st.session_state.role = None
-if "edit_mode" not in st.session_state:
-    st.session_state.edit_mode = False
-if "edited_df" not in st.session_state:
-    st.session_state.edited_df = None
-if "dark_mode" not in st.session_state:
-    st.session_state.dark_mode = False
-if "page" not in st.session_state:
-    st.session_state.page = "home"
+for key, default in {
+    "logged_in": False,
+    "role": None,
+    "edit_mode": False,
+    "edited_df": None,
+    "dark_mode": False,
+    "page": "home"
+}.items():
+    if key not in st.session_state:
+        st.session_state[key] = default
 
-# --- Sidebar Styling and Controls ---
-role_color = "#e8eaed" if st.session_state.dark_mode else "#202124"
-st.sidebar.markdown(f"<span style='color: {role_color}; font-weight: bold;'>🔒 Current Role: {st.session_state.role}</span>", unsafe_allow_html=True)
-st.sidebar.markdown(f"<label style='color: {role_color};'>🌗 Enable Dark Mode</label>", unsafe_allow_html=True)
-st.session_state.dark_mode = st.sidebar.toggle("", value=st.session_state.dark_mode)
-dark_mode = st.session_state.dark_mode
+# --- Navigation Bar ---
+st.markdown("""
+    <style>
+        .nav-container {
+            display: flex;
+            justify-content: space-around;
+            background-color: #f0f2f6;
+            padding: 1rem;
+            border-radius: 0.5rem;
+            margin-bottom: 1rem;
+        }
+        .nav-button {
+            background-color: #5f6368;
+            color: white;
+            padding: 0.5rem 1rem;
+            border-radius: 5px;
+            text-decoration: none;
+            font-weight: bold;
+        }
+        .nav-button:hover {
+            background-color: #3c4043;
+        }
+    </style>
+    <div class="nav-container">
+        <a href="#" onclick="window.location.reload();" class="nav-button">🏠 Home</a>
+        <a href="?page=dashboard" class="nav-button">📚 Dashboard</a>
+        <a href="?page=summary" class="nav-button">📊 Summary Statistics</a>
+        <a href="?page=admin" class="nav-button">⚙️ Admin Tools</a>
+    </div>
+""", unsafe_allow_html=True)
 
-st.sidebar.markdown("---")
-st.sidebar.markdown("## 📂 Navigation")
-if st.sidebar.button("🏠 Home"):
-    st.session_state.page = "home"
-if st.sidebar.button("📚 Dashboard"):
-    st.session_state.page = "dashboard"
-if st.sidebar.button("📈 Summary Statistics"):
-    st.session_state.page = "summary"
+if st.query_params.get("page"):
+    st.session_state.page = st.query_params["page"]
 
 # --- Dark Mode CSS ---
-if dark_mode:
+if st.session_state.dark_mode:
     st.markdown("""
         <style>
             html, body, [class*="main"] {
@@ -59,20 +75,9 @@ if dark_mode:
             .stMultiSelect label, .stCheckbox label {
                 color: #e8eaed !important;
             }
-            .st-bb, .st-bc, .stMarkdown, .stMarkdown p,
-            .stText, .stDataFrame, .css-1v0mbdj {
-                color: #e8eaed !important;
-            }
             .stButton > button {
                 background-color: #5f6368 !important;
                 color: #ffffff !important;
-                border: none;
-            }
-            .stSelectbox > div[data-baseweb="select"] > div {
-                background-color: #303134 !important;
-            }
-            .stExpanderHeader {
-                color: #e8eaed !important;
             }
         </style>
     """, unsafe_allow_html=True)
@@ -80,16 +85,10 @@ if dark_mode:
 # --- Login Page ---
 if not st.session_state.logged_in:
     st.markdown("""
-        <div style='max-width: 400px; margin: 100px auto; padding: 20px; text-align: center;'>
-            <img src='https://raw.githubusercontent.com/iprobsu/IPRO/main/ipro_logo.png' width='80' style='filter: drop-shadow(0 0 10px #00ffaa); animation: bounce 2s infinite; margin-bottom: 20px;' />
+        <div style='max-width: 400px; margin: 100px auto; text-align: center;'>
+            <img src='https://raw.githubusercontent.com/iprobsu/IPRO/main/ipro_logo.png' width='80' style='margin-bottom: 20px;' />
             <h2>🔐 IPRO Dashboard Login</h2>
         </div>
-        <style>
-            @keyframes bounce {
-                0%, 100% { transform: translateY(0); }
-                50% { transform: translateY(-10px); }
-            }
-        </style>
     """, unsafe_allow_html=True)
 
     with st.form("login_form"):
@@ -139,14 +138,15 @@ df = load_data()
 if st.session_state.page == "home":
     st.markdown("""
         <div style='text-align: center;'>
-            <img src='https://raw.githubusercontent.com/iprobsu/IPRO/main/ipro_logo.png' width='80' style='filter: drop-shadow(0 0 10px #00ffaa); animation: bounce 2s infinite;' />
+            <img src='https://raw.githubusercontent.com/iprobsu/IPRO/main/ipro_logo.png' width='80' />
             <h1>🏠 Welcome to the IP Masterlist System</h1>
-            <p style='font-size: 18px;'>Use the sidebar to navigate between features like the Dashboard and Statistics panel.</p>
+            <p style='font-size: 18px;'>Use the top navigation to browse sections of the app.</p>
         </div>
     """, unsafe_allow_html=True)
 
 elif st.session_state.page == "dashboard":
-    st.markdown("## 📚 IP Dashboard (Coming Soon: Add Full Dashboard Features Here)")
+    st.markdown("## 📚 IP Dashboard")
+    st.write("(Coming soon: full dashboard logic)")
 
 elif st.session_state.page == "summary":
     st.markdown("## 📈 Summary Statistics Panel")
@@ -179,3 +179,10 @@ elif st.session_state.page == "summary":
         st.altair_chart(alt.Chart(year_df).mark_line(point=True).encode(
             x='Year', y='Count', tooltip=['Year', 'Count']
         ).properties(title="IP Submissions Over Time"), use_container_width=True)
+
+elif st.session_state.page == "admin" and st.session_state.role == "Admin":
+    st.markdown("## ⚙️ Admin Tools")
+    st.write("(Coming soon: admin-only features for managing data, users, etc.)")
+
+elif st.session_state.page == "admin":
+    st.warning("🔒 Access denied. Admins only.")
