@@ -21,12 +21,12 @@ if "dark_mode" not in st.session_state:
     st.session_state.dark_mode = False
 
 # --- Sidebar ---
+dark_mode_toggle_color = "#e8eaed" if not st.session_state.dark_mode else "#ffffff"
+st.sidebar.markdown(f"<span style='color: {dark_mode_toggle_color}'>🔒 Current Role: {st.session_state.role}</span>", unsafe_allow_html=True)
 st.session_state.dark_mode = st.sidebar.toggle("🌗 Enable Dark Mode", value=st.session_state.dark_mode)
 dark_mode = st.session_state.dark_mode
-sidebar_font_color = "#ffffff" if dark_mode else "#000000"
-st.sidebar.markdown(f"<span style='color: {sidebar_font_color}'>🔒 Current Role: {st.session_state.role}</span>", unsafe_allow_html=True)
 
-# --- Full Page Dark Mode Styling ---
+# --- Dark Mode Styling (Chrome-like) ---
 if dark_mode:
     st.markdown("""
         <style>
@@ -35,9 +35,8 @@ if dark_mode:
                 color: #e8eaed !important;
                 font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
             }
-            [class*="block-container"], [data-testid="stSidebar"], .stForm, .stDataFrameContainer, .stDataEditorContainer, .stExpander, .stSelectbox, .stTextInput, .stDateInput, .stMultiSelect, .stButton {
+            [class*="block-container"], [data-testid="stSidebar"] {
                 background-color: #202124 !important;
-                color: #e8eaed !important;
             }
             input, select, textarea {
                 background-color: #303134 !important;
@@ -47,13 +46,15 @@ if dark_mode:
             label, .stTextInput label, .stSelectbox label, .stDateInput label, .stMultiSelect label {
                 color: #e8eaed !important;
             }
-            .stCheckbox > label, .stRadio > label {
+            .st-bb, .st-bc, .stMarkdown, .stMarkdown p, .stText, .stTextInput, .stSelectbox, .stDateInput, .css-1v0mbdj, .stMultiSelect {
                 color: #e8eaed !important;
             }
-            .css-1v0mbdj, .css-1kyxreq, .stMultiSelect .css-1xarl3l, .css-1y4p8pa, .stButton button {
-                background-color: #303134 !important;
+            .css-1aumxhk, .css-1v3fvcr, .css-ffhzg2, .stDataFrameContainer, .stDataEditorContainer {
+                background-color: #202124 !important;
                 color: #e8eaed !important;
-                border: 1px solid #5f6368 !important;
+            }
+            .stCheckbox > label {
+                color: #e8eaed !important;
             }
         </style>
     """, unsafe_allow_html=True)
