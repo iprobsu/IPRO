@@ -34,27 +34,17 @@ if dark_mode:
                 color: #e0e0e0 !important;
                 font-family: 'Roboto', sans-serif;
             }
+            input, select, textarea {
+                background-color: #1e1e1e !important;
+                color: #e0e0e0 !important;
+            }
         </style>
     """, unsafe_allow_html=True)
 
 # --- Login Page ---
 if not st.session_state.logged_in:
     st.markdown("""
-        <style>
-            .login-box {
-                max-width: 400px;
-                margin: 100px auto;
-                padding: 40px;
-                border-radius: 10px;
-                background-color: #f9f9f9;
-                box-shadow: 0px 0px 10px rgba(0,0,0,0.1);
-                text-align: center;
-            }
-            .login-box h2 {
-                margin-bottom: 30px;
-            }
-        </style>
-        <div class="login-box">
+        <div style="max-width: 400px; margin: 100px auto; padding: 20px; text-align: center; background: transparent;">
             <img src="https://raw.githubusercontent.com/iprobsu/IPRO/main/ipro_logo.png" alt="IPRO Logo" width="80" style="filter: drop-shadow(0 0 10px #00ffaa); margin-bottom: 20px;" />
             <h2>🔐 IPRO Dashboard Login</h2>
         </div>
