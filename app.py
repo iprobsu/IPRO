@@ -17,6 +17,25 @@ if "edit_mode" not in st.session_state:
     st.session_state.edit_mode = False
 if "edited_df" not in st.session_state:
     st.session_state.edited_df = None
+if "dark_mode" not in st.session_state:
+    st.session_state.dark_mode = False
+
+# --- Sidebar ---
+st.sidebar.markdown(f"**🔒 Current Role:** {st.session_state.role}")
+st.session_state.dark_mode = st.sidebar.toggle("🌗 Enable Dark Mode", value=st.session_state.dark_mode)
+dark_mode = st.session_state.dark_mode
+
+# --- Dark Mode Styling ---
+if dark_mode:
+    st.markdown("""
+        <style>
+            html, body, [class*="css"] {
+                background-color: #121212 !important;
+                color: #e0e0e0 !important;
+                font-family: 'Roboto', sans-serif;
+            }
+        </style>
+    """, unsafe_allow_html=True)
 
 # --- Login Page ---
 if not st.session_state.logged_in:
@@ -29,13 +48,14 @@ if not st.session_state.logged_in:
                 border-radius: 10px;
                 background-color: #f9f9f9;
                 box-shadow: 0px 0px 10px rgba(0,0,0,0.1);
+                text-align: center;
             }
             .login-box h2 {
-                text-align: center;
                 margin-bottom: 30px;
             }
         </style>
         <div class="login-box">
+            <img src="https://raw.githubusercontent.com/iprobsu/IPRO/main/ipro_logo.png" alt="IPRO Logo" width="80" style="filter: drop-shadow(0 0 10px #00ffaa); margin-bottom: 20px;" />
             <h2>🔐 IPRO Dashboard Login</h2>
         </div>
     """, unsafe_allow_html=True)
@@ -57,22 +77,6 @@ if not st.session_state.logged_in:
             else:
                 st.error("❌ Invalid username or password")
     st.stop()
-
-# --- Sidebar ---
-st.sidebar.markdown(f"**🔒 Current Role:** {st.session_state.role}")
-dark_mode = st.sidebar.toggle("🌗 Enable Dark Mode", value=False)
-
-# --- Dark Mode Styling ---
-if dark_mode:
-    st.markdown("""
-        <style>
-            html, body, [class*="css"] {
-                background-color: #121212 !important;
-                color: #e0e0e0 !important;
-                font-family: 'Roboto', sans-serif;
-            }
-        </style>
-    """, unsafe_allow_html=True)
 
 # --- Logo and Title ---
 st.markdown("""
