@@ -16,7 +16,7 @@ for key, default in {
     "edit_mode": False,
     "edited_df": None,
     "dark_mode": False,
-    "show_summary": False
+    "page": "dashboard"
 }.items():
     if key not in st.session_state:
         st.session_state[key] = default
@@ -32,49 +32,12 @@ if st.session_state.dark_mode:
         </style>
     """, unsafe_allow_html=True)
 
-# --- Summary Page Handler ---
-if st.session_state.show_summary:
-    # Full-page summary statistics area
-    st.markdown("## 📊 Summary Statistics")
-    # Back button
-    if st.button("← Back to Dashboard"):
-        st.session_state.show_summary = False
-        st.experimental_rerun()
-    # Load data
-    def load_data():
-        data_dir = "data"
-        records = []
-        for fname in os.listdir(data_dir):
-            if fname.endswith(".xlsx"):
-                year = fname[:4]
-                path = os.path.join(data_dir, fname)
-                xls = pd.read_excel(path, sheet_name=None, engine="openpyxl")
-                for sheet, df in xls.items():
-                    df['Year'] = year
-                    df['IP Type'] = sheet
-                    records.append(df)
-        df = pd.concat(records, ignore_index=True)
-        df['Date Applied'] = pd.to_datetime(df.get('Date Applied', pd.NaT), errors='coerce')
-        df.fillna('', inplace=True)
-        if 'Author' in df:
-            df['Author'] = df['Author'].astype(str).str.replace(';', ',').str.split(',')
-            df['Author'] = df['Author'].apply(lambda lst: [x.strip() for x in lst])
-            df = df.explode('Author').reset_index(drop=True)
-        return df
-    df_sum = load_data()
-    st.metric("Total Entries", len(df_sum))
-    if 'IP Type' in df_sum:
-        st.bar_chart(df_sum['IP Type'].value_counts())
-    if 'Year' in df_sum:
-        st.line_chart(df_sum['Year'].value_counts().sort_index())
-    st.stop()
-
 # --- Sidebar ---
 role_color = "#e8eaed" if not st.session_state.dark_mode else "#ffffff"
 st.sidebar.markdown(f"<span style='color: {role_color};'>🔒 Current Role: {st.session_state.role}</span>", unsafe_allow_html=True)
 st.session_state.dark_mode = st.sidebar.toggle("🌗 Enable Dark Mode", value=st.session_state.dark_mode)
 
-# --- Login ---
+# --- Login Page ---
 if not st.session_state.logged_in:
     st.markdown("""
         <div style='max-width:400px;margin:100px auto;text-align:center;'>
@@ -98,16 +61,8 @@ if not st.session_state.logged_in:
                 st.error("❌ Invalid credentials")
     st.stop()
 
-# --- Logo & Title ---
-st.markdown("""
-    <div style='text-align:center;'>
-        <img src='https://raw.githubusercontent.com/iprobsu/IPRO/main/ipro_logo.png' width='80'/>
-        <h1>📚 IP Masterlist Dashboard</h1>
-    </div>
-""", unsafe_allow_html=True)
-
-# --- Load Data for Dashboard & Summary ---
-def load_dashboard_data():
+# --- Load Data ---
+def load_data():
     data_dir = "data"
     all_data = []
     for filename in os.listdir(data_dir):
@@ -115,7 +70,8 @@ def load_dashboard_data():
             year = filename[:4]
             xls = pd.read_excel(os.path.join(data_dir, filename), sheet_name=None, engine="openpyxl")
             for sheet, df in xls.items():
-                df['Year'] = year; df['IP Type'] = sheet
+                df['Year'] = year
+                df['IP Type'] = sheet
                 all_data.append(df)
     df = pd.concat(all_data, ignore_index=True)
     df['Date Applied'] = pd.to_datetime(df.get('Date Applied', pd.NaT), errors='coerce')
@@ -126,7 +82,50 @@ def load_dashboard_data():
         df = df.explode('Author').reset_index(drop=True)
     return df
 
-df = load_dashboard_data()
+df = load_data()
+
+# --- Top Navigation ---
+st.markdown("""
+    <style>
+    .nav-bar button {
+        margin-right: 10px;
+        background-color: #4CAF50;
+        color: white;
+        border: none;
+        padding: 8px 16px;
+        text-align: center;
+        font-size: 14px;
+        cursor: pointer;
+    }
+    </style>
+    <div class='nav-bar'>
+        <form method='post'>
+            <button onclick="window.location.reload();">🏠 Dashboard</button>
+            <button onclick="window.location.href='?page=summary';">📊 Summary Statistics</button>
+        </form>
+    </div>
+""", unsafe_allow_html=True)
+
+# --- Page Routing ---
+if st.session_state.page == "summary":
+    if st.button("← Back to Dashboard"):
+        st.session_state.page = "dashboard"
+        st.experimental_rerun()
+    st.markdown("## 📊 Summary Statistics")
+    st.metric("Total Entries", len(df))
+    if 'IP Type' in df:
+        st.bar_chart(df['IP Type'].value_counts())
+    if 'Year' in df:
+        st.line_chart(df['Year'].value_counts().sort_index())
+    st.stop()
+
+# --- Main Dashboard ---
+st.markdown("""
+    <div style='text-align:center;'>
+        <img src='https://raw.githubusercontent.com/iprobsu/IPRO/main/ipro_logo.png' width='80'/>
+        <h1>📚 IP Masterlist Dashboard</h1>
+    </div>
+""", unsafe_allow_html=True)
 
 # --- Filters & Dashboard Interface ---
 st.markdown("### 🔍 Search Intellectual Property Records")
@@ -155,7 +154,7 @@ if date_range:
 
 # --- Trigger Summary Page ---
 if stats_btn and not filtered_df.empty:
-    st.session_state.show_summary = True
+    st.session_state.page = "summary"
     st.experimental_rerun()
 
 # --- Editable Table View ---
@@ -172,3 +171,4 @@ if st.session_state.edit_mode:
         st.session_state.edit_mode=False; st.experimental_rerun()
 else:
     st.dataframe(filtered_df, use_container_width=True, height=600)
+
