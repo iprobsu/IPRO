@@ -21,7 +21,8 @@ if "dark_mode" not in st.session_state:
     st.session_state.dark_mode = False
 
 # --- Sidebar ---
-st.sidebar.markdown(f"**🔒 Current Role:** {st.session_state.role}")
+dark_mode_toggle_color = "#e8eaed" if not st.session_state.dark_mode else "#ffffff"
+st.sidebar.markdown(f"<span style='color: {dark_mode_toggle_color}'>🔒 Current Role: {st.session_state.role}</span>", unsafe_allow_html=True)
 st.session_state.dark_mode = st.sidebar.toggle("🌗 Enable Dark Mode", value=st.session_state.dark_mode)
 dark_mode = st.session_state.dark_mode
 
@@ -50,6 +51,9 @@ if dark_mode:
             }
             .css-1aumxhk, .css-1v3fvcr, .css-ffhzg2, .stDataFrameContainer, .stDataEditorContainer {
                 background-color: #202124 !important;
+                color: #e8eaed !important;
+            }
+            .stCheckbox > label {
                 color: #e8eaed !important;
             }
         </style>
