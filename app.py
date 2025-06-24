@@ -51,11 +51,11 @@ if not st.session_state.logged_in:
             if user == "admin" and pwd == "admin123":
                 st.session_state.logged_in = True
                 st.session_state.role = "Admin"
-                st.experimental_rerun()
+                st.rerun()
             elif user == "mod" and pwd == "mod123":
                 st.session_state.logged_in = True
                 st.session_state.role = "Moderator"
-                st.experimental_rerun()
+                st.rerun()
             else:
                 st.error("❌ Invalid credentials")
     st.stop()
@@ -81,41 +81,20 @@ def load_data():
         df = df.explode('Author').reset_index(drop=True)
     return df
 
-# --- Top Navigation ---
-st.markdown("""
-    <style>
-    .nav-bar button {
-        margin-right: 10px;
-        background-color: #4CAF50;
-        color: white;
-        border: none;
-        padding: 8px 16px;
-        text-align: center;
-        font-size: 14px;
-        cursor: pointer;
-    }
-    </style>
-    <div class='nav-bar'>
-        <button onclick="window.location.href='/?page=Dashboard';">🏠 Dashboard</button>
-        <button onclick="window.location.href='/?page=Summary';">📊 Summary Statistics</button>
-    </div>
-""", unsafe_allow_html=True)
-
-# --- Manual Page Switching Logic ---
-if st.query_params.get("page"):
-    st.session_state.current_page = st.query_params.get("page")
-
 # --- Load Data Once ---
 if "full_data" not in st.session_state:
     st.session_state.full_data = load_data()
 df = st.session_state.full_data
 
-# --- Summary Page ---
-if st.session_state.current_page == "Summary":
-    st.markdown("## 📊 Summary Statistics")
-    st.markdown("""<button onclick="window.location.href='/?page=Dashboard';">← Back to Dashboard</button>""", unsafe_allow_html=True)
+# --- Top Navigation ---
+nav = st.selectbox("🔎 Navigate", ["Dashboard", "Summary Statistics"], index=(0 if st.session_state.current_page == "Dashboard" else 1))
+st.session_state.current_page = nav
 
+# --- Summary Page ---
+if st.session_state.current_page == "Summary Statistics":
+    st.markdown("## 📊 Summary Statistics")
     st.metric("Total Entries", len(df))
+
     if 'IP Type' in df:
         st.altair_chart(alt.Chart(df).mark_bar().encode(
             x='IP Type', y='count()', color='IP Type', tooltip=['IP Type', 'count()']
@@ -150,7 +129,6 @@ search_term = col1.text_input("Search by Author or Title")
 ip_type = col2.selectbox("Filter by IP Type", ["All"] + sorted(df['IP Type'].unique()))
 year = col3.selectbox("Filter by Year", ["All"] + sorted(df['Year'].unique()))
 col4.markdown("&nbsp;")
-stats_btn = col4.button("📈 Summary Page")
 
 with st.expander("📂 Advanced Filters"):
     college = st.selectbox("Filter by College", ["All"] + sorted(df['College'].unique()) if 'College' in df else ["All"])
@@ -170,11 +148,6 @@ if date_range:
     if len(date_range)==1: filtered_df = filtered_df[filtered_df['Date Applied']>=pd.to_datetime(date_range[0])]
     elif len(date_range)==2: filtered_df = filtered_df[filtered_df['Date Applied'].between(pd.to_datetime(date_range[0]), pd.to_datetime(date_range[1]))]
 
-# --- Navigate to Summary ---
-if stats_btn:
-    st.session_state.current_page = "Summary"
-    st.experimental_rerun()
-
 # --- Editable Table View ---
 if st.session_state.role == "Admin":
     if st.button("✏️ Edit Mode"):
@@ -186,6 +159,7 @@ if st.session_state.edit_mode:
     if st.button("💾 Save Changes"):
         st.session_state.edited_df = edited; st.success("✅ Saved in session.")
     if st.button("↩️ Cancel"):
-        st.session_state.edit_mode=False; st.experimental_rerun()
+        st.session_state.edit_mode=False; st.rerun()
 else:
     st.dataframe(filtered_df, use_container_width=True, height=600)
+
