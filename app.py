@@ -1,7 +1,6 @@
 import streamlit as st
 import pandas as pd
 import os
-import io
 import altair as alt
 from openpyxl import Workbook
 from openpyxl.styles import PatternFill
@@ -9,26 +8,26 @@ from openpyxl.styles import PatternFill
 # --- Page Setup ---
 st.set_page_config(page_title="IP Masterlist Dashboard", layout="wide")
 
-# --- Session State ---
+# --- Session State Initialization ---
 for key, default in {
     "logged_in": False,
     "role": None,
     "edit_mode": False,
     "edited_df": None,
     "dark_mode": False,
-    "page": "dashboard"
+    "current_page": "Dashboard"
 }.items():
     if key not in st.session_state:
         st.session_state[key] = default
 
-# --- Dark Mode CSS ---
+# --- Dark Mode Styling ---
 if st.session_state.dark_mode:
     st.markdown("""
         <style>
-            html, body, [class*="main"] { background-color: #202124 !important; color: #e8eaed !important; }
-            [data-testid="stSidebar"], .block-container { background-color: #202124 !important; }
-            input, select, textarea { background-color: #303134 !important; color: #e8eaed !important; }
-            .stButton > button { background-color: #5f6368 !important; color: #ffffff !important; }
+        html, body, [class*="main"] { background-color: #202124 !important; color: #e8eaed !important; }
+        [data-testid="stSidebar"], .block-container { background-color: #202124 !important; }
+        input, select, textarea { background-color: #303134 !important; color: #e8eaed !important; }
+        .stButton > button { background-color: #5f6368 !important; color: #ffffff !important; }
         </style>
     """, unsafe_allow_html=True)
 
@@ -82,8 +81,6 @@ def load_data():
         df = df.explode('Author').reset_index(drop=True)
     return df
 
-df = load_data()
-
 # --- Top Navigation ---
 st.markdown("""
     <style>
@@ -99,27 +96,46 @@ st.markdown("""
     }
     </style>
     <div class='nav-bar'>
-        <form method='post'>
-            <button onclick="window.location.reload();">🏠 Dashboard</button>
-            <button onclick="window.location.href='?page=summary';">📊 Summary Statistics</button>
-        </form>
+        <button onclick="window.location.href='/?page=Dashboard';">🏠 Dashboard</button>
+        <button onclick="window.location.href='/?page=Summary';">📊 Summary Statistics</button>
     </div>
 """, unsafe_allow_html=True)
 
-# --- Page Routing ---
-if st.session_state.page == "summary":
-    if st.button("← Back to Dashboard"):
-        st.session_state.page = "dashboard"
-        st.experimental_rerun()
+# --- Manual Page Switching Logic ---
+if st.query_params.get("page"):
+    st.session_state.current_page = st.query_params.get("page")
+
+# --- Load Data Once ---
+if "full_data" not in st.session_state:
+    st.session_state.full_data = load_data()
+df = st.session_state.full_data
+
+# --- Summary Page ---
+if st.session_state.current_page == "Summary":
     st.markdown("## 📊 Summary Statistics")
+    st.markdown("""<button onclick="window.location.href='/?page=Dashboard';">← Back to Dashboard</button>""", unsafe_allow_html=True)
+
     st.metric("Total Entries", len(df))
     if 'IP Type' in df:
-        st.bar_chart(df['IP Type'].value_counts())
+        st.altair_chart(alt.Chart(df).mark_bar().encode(
+            x='IP Type', y='count()', color='IP Type', tooltip=['IP Type', 'count()']
+        ).properties(title="IP Type Distribution"), use_container_width=True)
+
+    if 'College' in df:
+        st.altair_chart(alt.Chart(df).mark_arc().encode(
+            theta='count()', color='College', tooltip=['College', 'count()']
+        ).properties(title="Distribution by College"), use_container_width=True)
+
     if 'Year' in df:
-        st.line_chart(df['Year'].value_counts().sort_index())
+        year_df = df['Year'].value_counts().reset_index()
+        year_df.columns = ['Year', 'Count']
+        st.altair_chart(alt.Chart(year_df).mark_line(point=True).encode(
+            x='Year', y='Count', tooltip=['Year', 'Count']
+        ).properties(title="IP Submissions Over Time"), use_container_width=True)
+
     st.stop()
 
-# --- Main Dashboard ---
+# --- Dashboard Page ---
 st.markdown("""
     <div style='text-align:center;'>
         <img src='https://raw.githubusercontent.com/iprobsu/IPRO/main/ipro_logo.png' width='80'/>
@@ -133,7 +149,9 @@ col1, col2, col3, col4 = st.columns([3,2,2,1])
 search_term = col1.text_input("Search by Author or Title")
 ip_type = col2.selectbox("Filter by IP Type", ["All"] + sorted(df['IP Type'].unique()))
 year = col3.selectbox("Filter by Year", ["All"] + sorted(df['Year'].unique()))
-stats_btn = col4.button("📈 View Summary")
+col4.markdown("&nbsp;")
+stats_btn = col4.button("📈 Summary Page")
+
 with st.expander("📂 Advanced Filters"):
     college = st.selectbox("Filter by College", ["All"] + sorted(df['College'].unique()) if 'College' in df else ["All"])
     campus = st.selectbox("Filter by Campus", ["All"] + sorted(df['Campus'].unique()) if 'Campus' in df else ["All"])
@@ -150,11 +168,11 @@ if college!='All': filtered_df = filtered_df[filtered_df.get('College','')==coll
 if campus!='All': filtered_df = filtered_df[filtered_df.get('Campus','')==campus]
 if date_range:
     if len(date_range)==1: filtered_df = filtered_df[filtered_df['Date Applied']>=pd.to_datetime(date_range[0])]
-    else: filtered_df = filtered_df[filtered_df['Date Applied'].between(pd.to_datetime(date_range[0]), pd.to_datetime(date_range[1]))]
+    elif len(date_range)==2: filtered_df = filtered_df[filtered_df['Date Applied'].between(pd.to_datetime(date_range[0]), pd.to_datetime(date_range[1]))]
 
-# --- Trigger Summary Page ---
-if stats_btn and not filtered_df.empty:
-    st.session_state.page = "summary"
+# --- Navigate to Summary ---
+if stats_btn:
+    st.session_state.current_page = "Summary"
     st.experimental_rerun()
 
 # --- Editable Table View ---
@@ -171,4 +189,3 @@ if st.session_state.edit_mode:
         st.session_state.edit_mode=False; st.experimental_rerun()
 else:
     st.dataframe(filtered_df, use_container_width=True, height=600)
-
