@@ -140,40 +140,47 @@ def load_data():
 
 df = load_data()
 
-# --- Grouped Summary ---
-st.markdown("## 📊 Grouped Summary Statistics")
-group_col = st.selectbox("Group by", ['Author', 'IP Type', 'College', 'Year'])
+# --- Filter Section ---
+st.markdown("## 🎛 Summary Filter Panel")
+col1, col2, col3, col4 = st.columns(4)
+with col1:
+    author_filter = st.multiselect("Author", sorted(df['Author'].dropna().unique()))
+with col2:
+    college_filter = st.multiselect("College", sorted(df['College'].dropna().unique()) if 'College' in df else [])
+with col3:
+    ip_type_filter = st.multiselect("IP Type", sorted(df['IP Type'].dropna().unique()))
+with col4:
+    year_filter = st.multiselect("Year", sorted(df['Year'].dropna().unique()))
 
-selected_values = st.multiselect(f"Select {group_col}(s) to filter", sorted(df[group_col].unique()))
-filtered_summary_df = df[df[group_col].isin(selected_values)] if selected_values else df
+# --- Apply Filters ---
+filtered_df = df.copy()
+if author_filter:
+    filtered_df = filtered_df[filtered_df['Author'].isin(author_filter)]
+if college_filter and 'College' in df:
+    filtered_df = filtered_df[filtered_df['College'].isin(college_filter)]
+if ip_type_filter:
+    filtered_df = filtered_df[filtered_df['IP Type'].isin(ip_type_filter)]
+if year_filter:
+    filtered_df = filtered_df[filtered_df['Year'].isin(year_filter)]
 
-if not filtered_summary_df.empty:
-    st.write(f"Showing statistics for selected {group_col}(s):")
-
-    k1, k2, k3 = st.columns(3)
-    with k1:
-        st.metric("Total Entries", len(filtered_summary_df))
-    with k2:
-        most_common = filtered_summary_df['IP Type'].mode()[0] if not filtered_summary_df.empty else "N/A"
-        st.metric("Most Common IP Type", most_common)
-    with k3:
-        top_author = filtered_summary_df['Author'].value_counts().idxmax() if 'Author' in filtered_summary_df else "N/A"
-        st.metric("Top Author", top_author)
-
-    st.altair_chart(alt.Chart(filtered_summary_df).mark_bar().encode(
+# --- Summary Panel ---
+st.markdown("## 📊 Summary of Selected Data")
+if not filtered_df.empty:
+    st.metric("Total Records", len(filtered_df))
+    st.altair_chart(alt.Chart(filtered_df).mark_bar().encode(
         x='IP Type', y='count()', color='IP Type', tooltip=['IP Type', 'count()']
     ).properties(title="IP Type Distribution"), use_container_width=True)
 
-    if 'College' in filtered_summary_df:
-        st.altair_chart(alt.Chart(filtered_summary_df).mark_arc().encode(
+    if 'College' in filtered_df:
+        st.altair_chart(alt.Chart(filtered_df).mark_arc().encode(
             theta='count()', color='College', tooltip=['College', 'count()']
-        ).properties(title="Distribution by College"), use_container_width=True)
+        ).properties(title="College Distribution"), use_container_width=True)
 
-    if 'Year' in filtered_summary_df:
-        year_df = filtered_summary_df['Year'].value_counts().reset_index()
+    if 'Year' in filtered_df:
+        year_df = filtered_df['Year'].value_counts().reset_index()
         year_df.columns = ['Year', 'Count']
         st.altair_chart(alt.Chart(year_df).mark_line(point=True).encode(
             x='Year', y='Count', tooltip=['Year', 'Count']
-        ).properties(title="IP Submissions Over Time"), use_container_width=True)
+        ).properties(title="Submissions by Year"), use_container_width=True)
 else:
-    st.warning("No data available for selected criteria.")
+    st.warning("No data matches your current summary filters.")
