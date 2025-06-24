@@ -29,13 +29,23 @@ dark_mode = st.session_state.dark_mode
 if dark_mode:
     st.markdown("""
         <style>
-            html, body, [class*="css"] {
+            html, body {
                 background-color: #121212 !important;
                 color: #e0e0e0 !important;
                 font-family: 'Roboto', sans-serif;
             }
+            [class*="block-container"], [data-testid="stSidebar"] {
+                background-color: #121212 !important;
+            }
             input, select, textarea {
                 background-color: #1e1e1e !important;
+                color: #e0e0e0 !important;
+                border-color: #333 !important;
+            }
+            label, .stTextInput label, .stSelectbox label, .stDateInput label {
+                color: #e0e0e0 !important;
+            }
+            .css-1v0mbdj, .css-10trblm, .stMarkdown p, .st-bx {
                 color: #e0e0e0 !important;
             }
         </style>
@@ -45,9 +55,15 @@ if dark_mode:
 if not st.session_state.logged_in:
     st.markdown("""
         <div style="max-width: 400px; margin: 100px auto; padding: 20px; text-align: center; background: transparent;">
-            <img src="https://raw.githubusercontent.com/iprobsu/IPRO/main/ipro_logo.png" alt="IPRO Logo" width="80" style="filter: drop-shadow(0 0 10px #00ffaa); margin-bottom: 20px;" />
+            <img src="https://raw.githubusercontent.com/iprobsu/IPRO/main/ipro_logo.png" alt="IPRO Logo" width="80" style="filter: drop-shadow(0 0 10px #00ffaa); animation: bounce 2s infinite; margin-bottom: 20px;" />
             <h2>🔐 IPRO Dashboard Login</h2>
         </div>
+        <style>
+            @keyframes bounce {
+                0%, 100% { transform: translateY(0); }
+                50% { transform: translateY(-10px); }
+            }
+        </style>
     """, unsafe_allow_html=True)
 
     with st.form("login_form"):
