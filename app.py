@@ -31,7 +31,7 @@ dark_mode = st.session_state.dark_mode
 if dark_mode:
     st.markdown("""
         <style>
-            html, body {
+            html, body, [class*="css"] {
                 background-color: #202124 !important;
                 color: #e8eaed !important;
                 font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
@@ -103,5 +103,32 @@ if not st.session_state.logged_in:
 # --- Logo and Title ---
 st.markdown("""
     <div style="text-align: center;">
-        <img src="https://raw.githubusercontent
-        
+        <img src="https://raw.githubusercontent.com/iprobsu/IPRO/main/ipro_logo.png" alt="IPRO Logo" width="80" style="filter: drop-shadow(0 0 10px #00ffaa); animation: bounce 2s infinite;" />
+        <h1>📚 IP Masterlist Dashboard</h1>
+    </div>
+    <style>
+        @keyframes bounce {
+            0%, 100% { transform: translateY(0); }
+            50% { transform: translateY(-10px); }
+        }
+    </style>
+""", unsafe_allow_html=True)
+
+# --- Load Data ---
+def load_data():
+    return pd.DataFrame(columns=["Title", "Author", "Year", "IP Type", "College", "Campus", "Date Applied", "Status"])
+
+df = load_data()
+
+# --- Filters UI Fixes for Dark Mode ---
+st.markdown("""
+    <style>
+        .stTextInput, .stSelectbox, .stDateInput, .stMultiSelect, .stSlider {
+            background-color: inherit !important;
+            color: inherit !important;
+        }
+    </style>
+""", unsafe_allow_html=True)
+
+# --- Display Fallback ---
+st.dataframe(df)
