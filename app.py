@@ -20,16 +20,18 @@ for key, default in {
     if key not in st.session_state:
         st.session_state[key] = default
 
-# --- Dark Mode Styling ---
-if st.session_state.dark_mode:
-    st.markdown("""
-        <style>
-        html, body, [class*="main"] { background-color: #202124 !important; color: #e8eaed !important; }
-        [data-testid="stSidebar"], .block-container { background-color: #202124 !important; }
-        input, select, textarea { background-color: #303134 !important; color: #e8eaed !important; }
-        .stButton > button { background-color: #5f6368 !important; color: #ffffff !important; }
-        </style>
-    """, unsafe_allow_html=True)
+# --- Apply Dark Mode Styling Dynamically (Without Lag) ---
+base_styles = """
+    html, body, [class*='main'] { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
+    [data-testid="stSidebar"] span { font-weight: bold; }
+"""
+dark_styles = """
+    html, body, [class*="main"] { background-color: #202124 !important; color: #e8eaed !important; }
+    [data-testid="stSidebar"], .block-container { background-color: #202124 !important; }
+    input, select, textarea { background-color: #303134 !important; color: #e8eaed !important; }
+    .stButton > button { background-color: #5f6368 !important; color: #ffffff !important; }
+"""
+st.markdown(f"<style>{base_styles}{dark_styles if st.session_state.dark_mode else ''}</style>", unsafe_allow_html=True)
 
 # --- Sidebar ---
 role_color = "#e8eaed" if not st.session_state.dark_mode else "#ffffff"
