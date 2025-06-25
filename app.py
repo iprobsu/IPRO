@@ -62,8 +62,8 @@ st.markdown("""
 }
 </style>
 <div class="nav-bar">
-    <a href="/?page=dashboard">🏠 Home</a>
-    <a href="/?page=summary">📊 Summary Statistics</a>
+    <a href="?page=dashboard">🏠 Home</a>
+    <a href="?page=summary">📊 Summary Statistics</a>
 </div>
 """, unsafe_allow_html=True)
 
@@ -126,6 +126,6 @@ elif st.session_state.page == "summary":
 
     st.markdown("""
     <div style="text-align:center; margin-top: 20px;">
-        <a href="/?page=dashboard" style="padding:10px 20px; background:#374151; color:white; border-radius:6px; text-decoration:none;">⬅️ Back to Dashboard</a>
+        <a href="?page=dashboard" style="padding:10px 20px; background:#374151; color:white; border-radius:6px; text-decoration:none;">⬅️ Back to Dashboard</a>
     </div>
     """, unsafe_allow_html=True)
