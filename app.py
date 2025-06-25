@@ -33,13 +33,13 @@ index_md = """
 ## 📚 IP Masterlist Dashboard
 
 <|Search by Author or Title|input|bind=search_term|style='width:100%'|>
-<|Filter by IP Type|selector|lov={ip_types}|bind=ip_type_sel|dropdown|>
-<|Filter by Year|selector|lov={years}|bind=year_sel|dropdown|>
+<|Filter by IP Type|selector|lov=ip_types|bind=ip_type_sel|dropdown|>
+<|Filter by Year|selector|lov=years|bind=year_sel|dropdown|>
 
 <|📈 View Summary|button|on_action=goto_summary|>
 <|/card|>
 <|card|>
-<|Data|table|data=df_display|width=100%|height=400px|>
+<|df_display|table|width=100%|height=400px|>
 <|/card|>
 <|/layout|>
 """
@@ -50,9 +50,9 @@ summary_md = """
 ## 📊 Summary Statistics
 <|← Back to Dashboard|button|on_action=goto_home|style='margin-bottom:10px;'|>
 <|layout|columns=1 1 1|>
-<|Total Records|metric|value={record_count}|>
-<|Distinct IP Types|metric|value={distinct_ip}|>
-<|Avg Records/Year|metric|value={avg_per_year:.1f}|>
+<|Total Records|metric|value=record_count|>
+<|Distinct IP Types|metric|value=distinct_ip|>
+<|Avg Records/Year|metric|value=avg_per_year|format=%.1f|>
 <|/layout|>
 <|/card|>
 <|layout|columns=1 1|gap=20px|>
@@ -95,16 +95,15 @@ def update_filtered(state):
 
 
 def goto_summary(state):
-    global bar_data, line_data, record_count, distinct_ip, avg_per_year
     update_filtered(state)
-    record_count = len(df_display)
-    distinct_ip = df_display['IP Type'].nunique()
-    years_count = df_display['Year'].nunique() or 1
-    avg_per_year = record_count / years_count
-    bar_data = df_display['IP Type'].value_counts().reset_index()
-    bar_data.columns = ['IP Type', 'count']
-    line_data = df_display['Year'].value_counts().sort_index().reset_index()
-    line_data.columns = ['Year', 'count']
+    state.record_count = len(state.df_display)
+    state.distinct_ip = state.df_display['IP Type'].nunique()
+    years_count = state.df_display['Year'].nunique() or 1
+    state.avg_per_year = state.record_count / years_count
+    state.bar_data = state.df_display['IP Type'].value_counts().reset_index()
+    state.bar_data.columns = ['IP Type', 'count']
+    state.line_data = state.df_display['Year'].value_counts().sort_index().reset_index()
+    state.line_data.columns = ['Year', 'count']
     state.page = "summary"
 
 
@@ -112,4 +111,4 @@ def goto_home(state):
     state.page = "index"
 
 # --- Run GUI ---
-Gui(pages={"index": index_md, "summary": summary_md}).run(title="IP Masterlist Dashboard", use_reloader=True)
+Gui(pages={"index": index_md, "summary": summary_md}).run(title="IP Masterlist Dashboard", use_reloader=False)
