@@ -37,41 +37,38 @@ def load_data():
 df = load_data()
 
 # --- Navigation Bar ---
-with st.container():
-    st.markdown("""
-    <style>
-    .nav-bar {
-        background-color: #1f2937;
-        padding: 10px 0;
-        text-align: center;
-        border-radius: 8px;
-        margin-bottom: 25px;
-    }
-    .nav-bar button {
-        margin: 0 10px;
-        padding: 10px 20px;
-        font-size: 16px;
-        border: none;
-        border-radius: 6px;
-        cursor: pointer;
-        background-color: #374151;
-        color: #ffffff;
-    }
-    .nav-bar button:hover {
-        background-color: #4b5563;
-    }
-    </style>
-    <div class="nav-bar">
-        <form method="post">
-            <button onclick="window.location.reload(); return false;">🏠 Home</button>
-            <button onclick="window.location.href='?page=summary'; return false;">📊 Summary Statistics</button>
-        </form>
-    </div>
-    """, unsafe_allow_html=True)
+st.markdown("""
+<style>
+.nav-bar {
+    background-color: #1f2937;
+    padding: 10px 0;
+    text-align: center;
+    border-radius: 8px;
+    margin-bottom: 25px;
+}
+.nav-bar a {
+    margin: 0 10px;
+    padding: 10px 20px;
+    font-size: 16px;
+    border: none;
+    border-radius: 6px;
+    cursor: pointer;
+    background-color: #374151;
+    color: #ffffff;
+    text-decoration: none;
+}
+.nav-bar a:hover {
+    background-color: #4b5563;
+}
+</style>
+<div class="nav-bar">
+    <a href="/?page=dashboard">🏠 Home</a>
+    <a href="/?page=summary">📊 Summary Statistics</a>
+</div>
+""", unsafe_allow_html=True)
 
-    # Simulate navigation
-    page = st.query_params.get("page", "dashboard")
-    st.session_state.page = page
+page = st.query_params.get("page", "dashboard")
+st.session_state.page = page
 
 # --- Dashboard Page ---
 if st.session_state.page == "dashboard":
@@ -127,6 +124,8 @@ elif st.session_state.page == "summary":
     ).properties(title="IP Submissions Over Time")
     st.altair_chart(line_chart, use_container_width=True)
 
-    if st.button("⬅️ Back to Dashboard"):
-        st.session_state.page = "dashboard"
-        st.experimental_rerun()
+    st.markdown("""
+    <div style="text-align:center; margin-top: 20px;">
+        <a href="/?page=dashboard" style="padding:10px 20px; background:#374151; color:white; border-radius:6px; text-decoration:none;">⬅️ Back to Dashboard</a>
+    </div>
+    """, unsafe_allow_html=True)
