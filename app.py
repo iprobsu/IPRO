@@ -6,34 +6,112 @@ import altair as alt
 # --- Page Setup ---
 st.set_page_config(page_title="IP Masterlist Dashboard", layout="wide")
 
-# --- Session State Defaults ---
-def init_state():
-    defaults = {
-        'page': 'home',
-        'logged_in': False,
-        'role': None,
-        'edit_mode': False,
-        'edited_df': None
-    }
-    for k, v in defaults.items():
-        if k not in st.session_state:
-            st.session_state[k] = v
+# --- Session State Setup ---
+if "logged_in" not in st.session_state:
+    st.session_state.logged_in = False
+if "role" not in st.session_state:
+    st.session_state.role = None
+if "edit_mode" not in st.session_state:
+    st.session_state.edit_mode = False
+if "edited_df" not in st.session_state:
+    st.session_state.edited_df = None
+if "dark_mode" not in st.session_state:
+    st.session_state.dark_mode = False
 
-init_state()
+# --- Sidebar Navigation ---
+st.sidebar.title("IPRO Cloud")
+nav_items = {
+    "home": "🏠 Home",
+    "edit": "✏️ Edit Data",
+    "summary": "📊 Summary"
+}
+for key, label in nav_items.items():
+    if st.sidebar.button(label):
+        st.session_state.page = key
 
-# --- Authentication (Login) ---
+st.sidebar.markdown("---")
+if st.sidebar.button("🔒 Logout"):
+    st.session_state.logged_in = False
+    st.session_state.page = 'login'
+    st.experimental_rerun()
+
+# --- Dark Mode Toggle ---
+dark_mode_toggle_color = "#e8eaed" if not st.session_state.dark_mode else "#ffffff"
+st.sidebar.markdown(f"<span style='color: {dark_mode_toggle_color}'>🔒 Current Role: {st.session_state.role}</span>", unsafe_allow_html=True)
+st.session_state.dark_mode = st.sidebar.toggle("🌗 Enable Dark Mode", value=st.session_state.dark_mode)
+dark_mode = st.session_state.dark_mode
+
+# --- Dark Mode Styling ---
+if dark_mode:
+    st.markdown("""
+        <style>
+            html, body {
+                background-color: #202124 !important;
+                color: #e8eaed !important;
+                font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            }
+            [class*="block-container"], [data-testid="stSidebar"] {
+                background-color: #202124 !important;
+            }
+            input, select, textarea {
+                background-color: #303134 !important;
+                color: #e8eaed !important;
+                border: 1px solid #5f6368 !important;
+            }
+            label, .stTextInput label, .stSelectbox label, .stDateInput label, .stMultiSelect label {
+                color: #e8eaed !important;
+            }
+            .st-bb, .st-bc, .stMarkdown, .stMarkdown p, .stText, .stTextInput, .stSelectbox, .stDateInput, .css-1v0mbdj, .stMultiSelect {
+                color: #e8eaed !important;
+            }
+            .css-1aumxhk, .css-1v3fvcr, .css-ffhzg2, .stDataFrameContainer, .stDataEditorContainer {
+                background-color: #202124 !important;
+                color: #e8eaed !important;
+            }
+            .stCheckbox > label {
+                color: #e8eaed !important;
+            }
+            .stSelectbox > div[data-baseweb="select"] > div {
+                background-color: #303134 !important;
+            }
+            .stButton > button {
+                background-color: #5f6368;
+                color: white;
+            }
+        </style>
+    """, unsafe_allow_html=True)
+
+# --- Login Page ---
 if not st.session_state.logged_in:
-    st.title("🔐 IPRO Dashboard Login")
-    username = st.text_input("Username")
-    password = st.text_input("Password", type="password")
-    if st.button("Login"):
-        if username == "admin" and password == "admin123":
-            st.session_state.logged_in = True
-            st.session_state.role = 'Admin'
-            st.session_state.page = 'home'
-            st.experimental_rerun()
-        else:
-            st.error("Invalid credentials")
+    st.markdown("""
+        <div style="max-width: 400px; margin: 100px auto; padding: 20px; text-align: center; background: transparent;">
+            <img src="https://raw.githubusercontent.com/iprobsu/IPRO/main/ipro_logo.png" alt="IPRO Logo" width="80" style="filter: drop-shadow(0 0 10px #00ffaa); animation: bounce 2s infinite; margin-bottom: 20px;" />
+            <h2 style="color: inherit;">🔐 IPRO Dashboard Login</h2>
+        </div>
+        <style>
+            @keyframes bounce {
+                0%, 100% { transform: translateY(0); }
+                50% { transform: translateY(-10px); }
+            }
+        </style>
+    """, unsafe_allow_html=True)
+
+    with st.form("login_form"):
+        username = st.text_input("Username")
+        password = st.text_input("Password", type="password")
+        submitted = st.form_submit_button("Login")
+
+        if submitted:
+            if username == "admin" and password == "admin123":
+                st.session_state.logged_in = True
+                st.session_state.role = "Admin"
+                st.rerun()
+            elif username == "mod" and password == "mod123":
+                st.session_state.logged_in = True
+                st.session_state.role = "Moderator"
+                st.rerun()
+            else:
+                st.error("❌ Invalid username or password")
     st.stop()
 
 # --- Load Data ---
@@ -55,39 +133,23 @@ def load_data():
         df = df.explode('Author').reset_index(drop=True)
     return df
 
-# Load once
 if st.session_state.logged_in:
     df = load_data()
 
-# --- Sidebar Navigation (Huawei Cloud style) ---
-st.sidebar.title("IPRO Cloud")
-nav_items = {
-    'home': '🏠 Home',
-    'edit': '✏️ Edit Data',
-    'summary': '📊 Summary'
-}
-for key, label in nav_items.items():
-    if st.sidebar.button(label):
-        st.session_state.page = key
+# --- Page Views ---
+if "page" not in st.session_state:
+    st.session_state.page = "home"
 
-st.sidebar.markdown("---")
-if st.sidebar.button("🔒 Logout"):
-    st.session_state.logged_in = False
-    st.session_state.page = 'login'
-    st.experimental_rerun()
-
-# --- Main Content ---
-if st.session_state.page == 'home':
-    # Home / Dashboard view
+if st.session_state.page == "home":
     st.markdown("# 🏠 IP Masterlist Dashboard")
     search_term = st.text_input("🔍 Search by Author or Title", value="")
-    ip_type = st.selectbox("Filter by IP Type", ['All'] + sorted(df['IP Type'].unique()))
-    year = st.selectbox("Filter by Year", ['All'] + sorted(df['Year'].unique()))
+    ip_type = st.selectbox("Filter by IP Type", ['All'] + sorted(df['IP Type'].dropna().unique().tolist()))
+    year = st.selectbox("Filter by Year", ['All'] + sorted(df['Year'].dropna().unique().tolist()))
     with st.expander("⚙️ Advanced Filters"):
-        college = st.selectbox("Filter by College", ['All'] + sorted(df.get('College', []).astype(str).unique()))
-        campus = st.selectbox("Filter by Campus", ['All'] + sorted(df.get('Campus', []).astype(str).unique()))
+        college = st.selectbox("Filter by College", ['All'] + sorted(df['College'].dropna().astype(str).unique().tolist()) if 'College' in df.columns else ['All'])
+        campus = st.selectbox("Filter by Campus", ['All'] + sorted(df['Campus'].dropna().astype(str).unique().tolist()) if 'Campus' in df.columns else ['All'])
         date_range = st.date_input("Filter by Date Applied", [])
-    # Apply filters
+
     dff = df.copy()
     if search_term:
         mask = dff['Author'].astype(str).str.contains(search_term, case=False)
@@ -95,21 +157,19 @@ if st.session_state.page == 'home':
         dff = dff[mask]
     if ip_type != 'All': dff = dff[dff['IP Type']==ip_type]
     if year!='All': dff = dff[dff['Year']==year]
-    if 'College' in dff and college!='All': dff = dff[dff['College']==college]
-    if 'Campus' in dff and campus!='All': dff = dff[dff['Campus']==campus]
+    if 'College' in dff.columns and college!='All': dff = dff[dff['College']==college]
+    if 'Campus' in dff.columns and campus!='All': dff = dff[dff['Campus']==campus]
     if date_range:
         if len(date_range)==1: dff = dff[dff['Date Applied']>=pd.to_datetime(date_range[0])]
-        else: dff = dff[dff['Date Applied'].between(pd.to_datetime(date_range[0]), pd.to_datetime(date_range[1]))]
+        elif len(date_range)==2: dff = dff[dff['Date Applied'].between(pd.to_datetime(date_range[0]), pd.to_datetime(date_range[1]))]
+
     st.dataframe(dff, use_container_width=True, height=600)
 
-elif st.session_state.page == 'edit':
-    # Edit Data view
+elif st.session_state.page == "edit":
     st.markdown("# ✏️ Edit Data")
     st.write("Search, add, or delete entries below.")
-    # simple file selector by year
     selected_year = st.selectbox("Select Year (file)", sorted(df['Year'].unique()))
-    sub_df = df[df['Year']==selected_year]
-    # Data editor with delete: add a 'Delete' column of checkboxes
+    sub_df = df[df['Year']==selected_year].copy()
     sub_df['Delete'] = False
     edited = st.data_editor(sub_df, use_container_width=True)
     st.markdown("**Actions:**")
@@ -119,11 +179,9 @@ elif st.session_state.page == 'edit':
     if st.button("Apply Deletions"):
         to_delete = edited[edited['Delete']]
         st.write(f"Deleting {len(to_delete)} rows...")
-        # implement deletion logic here
-        notify = st.success("Deletion logic placeholder")
+        st.success("Deletion logic placeholder")
 
-elif st.session_state.page == 'summary':
-    # Summary Statistics view
+elif st.session_state.page == "summary":
     st.markdown("# 📊 Summary Statistics")
     total = len(df)
     distinct = df['IP Type'].nunique()
