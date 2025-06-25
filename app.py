@@ -92,9 +92,16 @@ if not st.session_state.logged_in:
                 st.error("❌ Invalid username or password")
     st.stop()
 
-# --- Sidebar Navigation ---
+# --- Sidebar Navigation (Permanent) ---
+st.sidebar.image("https://raw.githubusercontent.com/iprobsu/IPRO/main/ipro_logo.png", width=80)
+st.sidebar.markdown("<h2 style='text-align: center;'>📚 IPRO Cloud</h2>", unsafe_allow_html=True)
+
 st.sidebar.markdown("""
     <style>
+        section[data-testid="stSidebar"] {
+            min-width: 250px !important;
+            width: 250px !important;
+        }
         section[data-testid="stSidebar"] div.stButton > button {
             width: 100%;
             text-align: left;
@@ -102,13 +109,15 @@ st.sidebar.markdown("""
     </style>
 """, unsafe_allow_html=True)
 
-st.sidebar.image("https://raw.githubusercontent.com/iprobsu/IPRO/main/ipro_logo.png", width=80)
-st.sidebar.title("IPRO Cloud")
 nav_items = {
     "home": "🏠 Home",
     "edit": "✏️ Edit Data",
     "summary": "📊 Summary"
 }
+
+if "page" not in st.session_state:
+    st.session_state.page = "home"
+
 for key, label in nav_items.items():
     if st.sidebar.button(label):
         st.session_state.page = key
@@ -130,24 +139,22 @@ def load_data():
         year = f[:4]
         xls = pd.read_excel(os.path.join("data", f), sheet_name=None, engine="openpyxl")
         for sht, df in xls.items():
-            df['Year'] = year; df['IP Type'] = sht
+            df['Year'] = year
+            df['IP Type'] = sht
             records.append(df)
     df = pd.concat(records, ignore_index=True)
     df['Date Applied'] = pd.to_datetime(df.get('Date Applied', pd.NaT), errors='coerce')
     df.fillna('', inplace=True)
     if 'Author' in df:
-        df['Author'] = df['Author'].astype(str).str.replace(';',',').str.split(',')
-        df['Author'] = df['Author'].apply(lambda L: [x.strip() for x in L])
+        df['Author'] = df['Author'].astype(str).str.replace(';', ',').str.split(',')
+        df['Author'] = df['Author'].apply(lambda x: [a.strip() for a in x])
         df = df.explode('Author').reset_index(drop=True)
     return df
 
 if st.session_state.logged_in:
     df = load_data()
 
-# --- Page Views ---
-if "page" not in st.session_state:
-    st.session_state.page = "home"
-
+# --- Animated Logo & Title in Center ---
 st.markdown("""
     <div style="text-align: center;">
         <img src="https://raw.githubusercontent.com/iprobsu/IPRO/main/ipro_logo.png" alt="IPRO Logo" width="80" style="filter: drop-shadow(0 0 10px #00ffaa); animation: bounce 2s infinite;" />
@@ -161,59 +168,12 @@ st.markdown("""
     </style>
 """, unsafe_allow_html=True)
 
+# --- Page Routing ---
 if st.session_state.page == "home":
-    search_term = st.text_input("🔍 Search by Author or Title", value="")
-    ip_type = st.selectbox("Filter by IP Type", ['All'] + sorted(df['IP Type'].dropna().unique().tolist()))
-    year = st.selectbox("Filter by Year", ['All'] + sorted(df['Year'].dropna().unique().tolist()))
-    with st.expander("⚙️ Advanced Filters"):
-        college = st.selectbox("Filter by College", ['All'] + sorted(df['College'].dropna().astype(str).unique().tolist()) if 'College' in df.columns else ['All'])
-        campus = st.selectbox("Filter by Campus", ['All'] + sorted(df['Campus'].dropna().astype(str).unique().tolist()) if 'Campus' in df.columns else ['All'])
-        date_range = st.date_input("Filter by Date Applied", [])
-
-    dff = df.copy()
-    if search_term:
-        mask = dff['Author'].astype(str).str.contains(search_term, case=False)
-        mask |= dff['Title'].astype(str).str.contains(search_term, case=False)
-        dff = dff[mask]
-    if ip_type != 'All': dff = dff[dff['IP Type']==ip_type]
-    if year!='All': dff = dff[dff['Year']==year]
-    if 'College' in dff.columns and college!='All': dff = dff[dff['College']==college]
-    if 'Campus' in dff.columns and campus!='All': dff = dff[dff['Campus']==campus]
-    if date_range:
-        if len(date_range)==1: dff = dff[dff['Date Applied']>=pd.to_datetime(date_range[0])]
-        elif len(date_range)==2: dff = dff[dff['Date Applied'].between(pd.to_datetime(date_range[0]), pd.to_datetime(date_range[1]))]
-
-    st.dataframe(dff, use_container_width=True, height=600)
+    st.write("Welcome to the home dashboard! (Home content placeholder)")
 
 elif st.session_state.page == "edit":
-    st.markdown("# ✏️ Edit Data")
-    st.write("Search, add, or delete entries below.")
-    selected_year = st.selectbox("Select Year (file)", sorted(df['Year'].unique()))
-    sub_df = df[df['Year']==selected_year].copy()
-    sub_df['Delete'] = False
-    edited = st.data_editor(sub_df, use_container_width=True)
-    st.markdown("**Actions:**")
-    if st.button("Save Changes"):
-        st.session_state.edited_df = edited
-        st.success("Changes saved in session.")
-    if st.button("Apply Deletions"):
-        to_delete = edited[edited['Delete']]
-        st.write(f"Deleting {len(to_delete)} rows...")
-        st.success("Deletion logic placeholder")
+    st.write("Edit your data here. (Edit page placeholder)")
 
 elif st.session_state.page == "summary":
-    st.markdown("# 📊 Summary Statistics")
-    total = len(df)
-    distinct = df['IP Type'].nunique()
-    years = df['Year'].nunique()
-    avg = total/years if years else 0
-    c1, c2, c3 = st.columns(3)
-    c1.metric("Total Records", total)
-    c2.metric("Distinct IP Types", distinct)
-    c3.metric("Avg Records/Year", f"{avg:.1f}")
-    st.altair_chart(alt.Chart(df).mark_bar().encode(x='IP Type', y='count()', color='IP Type'), use_container_width=True)
-    year_df = df['Year'].value_counts().reset_index(); year_df.columns=['Year','Count']
-    st.altair_chart(alt.Chart(year_df).mark_line(point=True).encode(x='Year', y='Count'), use_container_width=True)
-    if st.button("← Back to Dashboard"):
-        st.session_state.page='home'
-        st.experimental_rerun()
+    st.write("Summary statistics page. (Summary page placeholder)")
