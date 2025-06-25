@@ -8,10 +8,9 @@ st.set_page_config(page_title="IP Masterlist Dashboard", layout="wide")
 
 # --- Session State Setup ---
 if "page" not in st.session_state:
-    st.session_state.page = "dashboard"
-
+    st.session_state.page = "login"
 if "logged_in" not in st.session_state:
-    st.session_state.logged_in = True  # Assume always logged in for this example
+    st.session_state.logged_in = False
 
 # --- Load Data ---
 def load_data():
@@ -34,41 +33,57 @@ def load_data():
         df = df.explode("Author").reset_index(drop=True)
     return df
 
-df = load_data()
+if st.session_state.logged_in:
+    df = load_data()
 
 # --- Navigation Bar ---
-st.markdown("""
-<style>
-.nav-bar {
-    background-color: #1f2937;
-    padding: 10px 0;
-    text-align: center;
-    border-radius: 8px;
-    margin-bottom: 25px;
-}
-.nav-bar a {
-    margin: 0 10px;
-    padding: 10px 20px;
-    font-size: 16px;
-    border: none;
-    border-radius: 6px;
-    cursor: pointer;
-    background-color: #374151;
-    color: #ffffff;
-    text-decoration: none;
-}
-.nav-bar a:hover {
-    background-color: #4b5563;
-}
-</style>
-<div class="nav-bar">
-    <a href="?page=dashboard">🏠 Home</a>
-    <a href="?page=summary">📊 Summary Statistics</a>
-</div>
-""", unsafe_allow_html=True)
+if st.session_state.logged_in:
+    st.markdown("""
+    <style>
+    .nav-bar {
+        background-color: #1f2937;
+        padding: 10px 0;
+        text-align: center;
+        border-radius: 8px;
+        margin-bottom: 25px;
+    }
+    .nav-bar a {
+        margin: 0 10px;
+        padding: 10px 20px;
+        font-size: 16px;
+        border: none;
+        border-radius: 6px;
+        cursor: pointer;
+        background-color: #374151;
+        color: #ffffff;
+        text-decoration: none;
+    }
+    .nav-bar a:hover {
+        background-color: #4b5563;
+    }
+    </style>
+    <div class="nav-bar">
+        <a href="?page=dashboard">🏠 Home</a>
+        <a href="?page=summary">📊 Summary Statistics</a>
+    </div>
+    """, unsafe_allow_html=True)
 
-page = st.query_params.get("page", "dashboard")
+page = st.query_params.get("page", st.session_state.page)
 st.session_state.page = page
+
+# --- Login Page ---
+if not st.session_state.logged_in:
+    st.title("🔐 IPRO Dashboard Login")
+    username = st.text_input("Username")
+    password = st.text_input("Password", type="password")
+    if st.button("Login"):
+        if username == "admin" and password == "admin123":
+            st.session_state.logged_in = True
+            st.session_state.page = "dashboard"
+            st.rerun()
+        else:
+            st.error("Invalid credentials")
+    st.stop()
 
 # --- Dashboard Page ---
 if st.session_state.page == "dashboard":
