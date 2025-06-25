@@ -1,114 +1,132 @@
-from taipy.gui import Gui, notify
+import streamlit as st
 import pandas as pd
 import os
 import altair as alt
 
+# --- Page Setup ---
+st.set_page_config(page_title="IP Masterlist Dashboard", layout="wide")
+
+# --- Session State Setup ---
+if "page" not in st.session_state:
+    st.session_state.page = "dashboard"
+
+if "logged_in" not in st.session_state:
+    st.session_state.logged_in = True  # Assume always logged in for this example
+
 # --- Load Data ---
 def load_data():
-    files = [f for f in os.listdir('data') if f.endswith('.xlsx')]
-    records = []
-    for f in files:
-        yr = f[:4]
-        sheets = pd.read_excel(os.path.join('data', f), sheet_name=None, engine='openpyxl')
-        for sht, df in sheets.items():
-            df['Year'] = yr
-            df['IP Type'] = sht
-            records.append(df)
-    df = pd.concat(records, ignore_index=True)
-    df['Date Applied'] = pd.to_datetime(df.get('Date Applied', pd.NaT), errors='coerce')
-    df.fillna('', inplace=True)
-    if 'Author' in df:
-        df['Author'] = df['Author'].astype(str).str.replace(';', ',').str.split(',')
-        df['Author'] = df['Author'].apply(lambda L: [x.strip() for x in L])
-        df = df.explode('Author').reset_index(drop=True)
+    files = [f for f in os.listdir("data") if f.endswith(".xlsx")]
+    all_data = []
+    for file in files:
+        year = file[:4]
+        xls = pd.read_excel(os.path.join("data", file), sheet_name=None, engine="openpyxl")
+        for sheet_name, df in xls.items():
+            df["Year"] = year
+            df["IP Type"] = sheet_name
+            all_data.append(df)
+    df = pd.concat(all_data, ignore_index=True)
+    df["Date Applied"] = pd.to_datetime(df.get("Date Applied", pd.NaT), errors="coerce")
+    df["Date Approved"] = pd.to_datetime(df.get("Date Approved", pd.NaT), errors="coerce")
+    df.fillna("", inplace=True)
+    if "Author" in df.columns:
+        df["Author"] = df["Author"].astype(str).str.replace(";", ",").str.split(",")
+        df["Author"] = df["Author"].apply(lambda x: [a.strip() for a in x])
+        df = df.explode("Author").reset_index(drop=True)
     return df
 
-# Global Data
-Df = load_data()
+df = load_data()
 
-# --- GUI Pages ---
-index_md = """
-<|layout|columns=1 1|gap=20px|>
-<|card style='height:100%;'|>
-## 📚 IP Masterlist Dashboard
+# --- Navigation Bar ---
+with st.container():
+    st.markdown("""
+    <style>
+    .nav-bar {
+        background-color: #1f2937;
+        padding: 10px 0;
+        text-align: center;
+        border-radius: 8px;
+        margin-bottom: 25px;
+    }
+    .nav-bar button {
+        margin: 0 10px;
+        padding: 10px 20px;
+        font-size: 16px;
+        border: none;
+        border-radius: 6px;
+        cursor: pointer;
+        background-color: #374151;
+        color: #ffffff;
+    }
+    .nav-bar button:hover {
+        background-color: #4b5563;
+    }
+    </style>
+    <div class="nav-bar">
+        <form method="post">
+            <button onclick="window.location.reload(); return false;">🏠 Home</button>
+            <button onclick="window.location.href='?page=summary'; return false;">📊 Summary Statistics</button>
+        </form>
+    </div>
+    """, unsafe_allow_html=True)
 
-<|Search by Author or Title|input|bind=search_term|style='width:100%'|>
-<|Filter by IP Type|selector|lov=ip_types|bind=ip_type_sel|dropdown|>
-<|Filter by Year|selector|lov=years|bind=year_sel|dropdown|>
+    # Simulate navigation
+    page = st.query_params.get("page", "dashboard")
+    st.session_state.page = page
 
-<|📈 View Summary|button|on_action=goto_summary|>
-<|/card|>
-<|card|>
-<|df_display|table|width=100%|height=400px|>
-<|/card|>
-<|/layout|>
-"""
+# --- Dashboard Page ---
+if st.session_state.page == "dashboard":
+    st.title("📚 IP Masterlist Dashboard")
+    col1, col2, col3 = st.columns(3)
+    with col1:
+        search_term = st.text_input("Search by Author or Title")
+    with col2:
+        ip_type = st.selectbox("Filter by IP Type", ["All"] + sorted(df["IP Type"].unique()))
+    with col3:
+        year = st.selectbox("Sort by Year", ["All"] + sorted(df["Year"].unique()))
 
-summary_md = """
-<|layout|columns=1|gap=20px|>
-<|card|>
-## 📊 Summary Statistics
-<|← Back to Dashboard|button|on_action=goto_home|style='margin-bottom:10px;'|>
-<|layout|columns=1 1 1|>
-<|Total Records|metric|value=record_count|>
-<|Distinct IP Types|metric|value=distinct_ip|>
-<|Avg Records/Year|metric|value=avg_per_year|format=%.1f|>
-<|/layout|>
-<|/card|>
-<|layout|columns=1 1|gap=20px|>
-<|card|>
-<|bar_data|chart|type=bar|x=IP Type|y=count|title='IP Type Distribution'|height=300px|>
-<|/card|>
-<|card|>
-<|line_data|chart|type=line|x=Year|y=count|title='Submissions Over Time'|height=300px|>
-<|/card|>
-<|/layout|>
-"""
+    filtered_df = df.copy()
+    if search_term:
+        filtered_df = filtered_df[
+            filtered_df["Author"].astype(str).str.contains(search_term, case=False, na=False) |
+            filtered_df["Title"].astype(str).str.contains(search_term, case=False, na=False)
+        ]
+    if ip_type != "All":
+        filtered_df = filtered_df[filtered_df["IP Type"] == ip_type]
+    if year != "All":
+        filtered_df = filtered_df[filtered_df["Year"] == year]
 
-# --- State ---
-search_term = ""
-ip_type_sel = "All"
-year_sel = "All"
-ip_types = ["All"] + sorted(Df['IP Type'].unique().tolist())
-years = ["All"] + sorted(Df['Year'].unique())
-df_display = Df.copy()
-bar_data = pd.DataFrame()
-line_data = pd.DataFrame()
-record_count = 0
-distinct_ip = 0
-avg_per_year = 0.0
+    st.dataframe(filtered_df, use_container_width=True)
 
-# --- Callbacks ---
-def update_filtered(state):
-    global df_display
-    df_display = Df.copy()
-    if state.search_term:
-        mask = df_display['Author'].astype(str).str.contains(state.search_term, case=False)
-        if 'Title' in df_display:
-            mask |= df_display['Title'].astype(str).str.contains(state.search_term, case=False)
-        df_display = df_display[mask]
-    if state.ip_type_sel != "All":
-        df_display = df_display[df_display['IP Type'] == state.ip_type_sel]
-    if state.year_sel != "All":
-        df_display = df_display[df_display['Year'] == state.year_sel]
-    state.df_display = df_display.copy()
+# --- Summary Statistics Page ---
+elif st.session_state.page == "summary":
+    st.title("📊 Summary Statistics")
+    st.markdown("<style>h1{ text-align: center; }</style>", unsafe_allow_html=True)
 
+    total = len(df)
+    distinct_types = df['IP Type'].nunique()
+    years_count = df['Year'].nunique()
+    avg_year = total / years_count if years_count else 0
 
-def goto_summary(state):
-    update_filtered(state)
-    state.record_count = len(state.df_display)
-    state.distinct_ip = state.df_display['IP Type'].nunique()
-    years_count = state.df_display['Year'].nunique() or 1
-    state.avg_per_year = state.record_count / years_count
-    state.bar_data = state.df_display['IP Type'].value_counts().reset_index()
-    state.bar_data.columns = ['IP Type', 'count']
-    state.line_data = state.df_display['Year'].value_counts().sort_index().reset_index()
-    state.line_data.columns = ['Year', 'count']
-    state.page = "summary"
+    kpi1, kpi2, kpi3 = st.columns(3)
+    with kpi1:
+        st.metric(label="Total Records", value=total)
+    with kpi2:
+        st.metric(label="Distinct IP Types", value=distinct_types)
+    with kpi3:
+        st.metric(label="Avg Records per Year", value=f"{avg_year:.2f}")
 
+    bar = alt.Chart(df).mark_bar().encode(
+        x='IP Type', y='count()', color='IP Type', tooltip=['IP Type', 'count()']
+    ).properties(title="IP Type Distribution")
+    st.altair_chart(bar, use_container_width=True)
 
-def goto_home(state):
-    state.page = "index"
+    line_data = df['Year'].value_counts().reset_index()
+    line_data.columns = ['Year', 'Count']
+    line_chart = alt.Chart(line_data).mark_line(point=True).encode(
+        x='Year', y='Count', tooltip=['Year', 'Count']
+    ).properties(title="IP Submissions Over Time")
+    st.altair_chart(line_chart, use_container_width=True)
 
-# --- Run GUI ---
-Gui(pages={"index": index_md, "summary": summary_md}).run(title="IP Masterlist Dashboard", use_reloader=False)
+    if st.button("⬅️ Back to Dashboard"):
+        st.session_state.page = "dashboard"
+        st.experimental_rerun()
