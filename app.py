@@ -18,31 +18,9 @@ if "edited_df" not in st.session_state:
 if "dark_mode" not in st.session_state:
     st.session_state.dark_mode = False
 
-# --- Sidebar Navigation ---
-st.sidebar.title("IPRO Cloud")
-nav_items = {
-    "home": "🏠 Home",
-    "edit": "✏️ Edit Data",
-    "summary": "📊 Summary"
-}
-for key, label in nav_items.items():
-    if st.sidebar.button(label):
-        st.session_state.page = key
-
-st.sidebar.markdown("---")
-if st.sidebar.button("🔒 Logout"):
-    st.session_state.logged_in = False
-    st.session_state.page = 'login'
-    st.experimental_rerun()
-
-# --- Dark Mode Toggle ---
-dark_mode_toggle_color = "#e8eaed" if not st.session_state.dark_mode else "#ffffff"
-st.sidebar.markdown(f"<span style='color: {dark_mode_toggle_color}'>🔒 Current Role: {st.session_state.role}</span>", unsafe_allow_html=True)
-st.session_state.dark_mode = st.sidebar.toggle("🌗 Enable Dark Mode", value=st.session_state.dark_mode)
-dark_mode = st.session_state.dark_mode
-
 # --- Dark Mode Styling ---
-if dark_mode:
+dark_mode_toggle_color = "#e8eaed" if not st.session_state.dark_mode else "#ffffff"
+if st.session_state.dark_mode:
     st.markdown("""
         <style>
             html, body {
@@ -114,6 +92,36 @@ if not st.session_state.logged_in:
                 st.error("❌ Invalid username or password")
     st.stop()
 
+# --- Sidebar Navigation ---
+st.sidebar.markdown("""
+    <style>
+        section[data-testid="stSidebar"] div.stButton > button {
+            width: 100%;
+            text-align: left;
+        }
+    </style>
+""", unsafe_allow_html=True)
+
+st.sidebar.image("https://raw.githubusercontent.com/iprobsu/IPRO/main/ipro_logo.png", width=80)
+st.sidebar.title("IPRO Cloud")
+nav_items = {
+    "home": "🏠 Home",
+    "edit": "✏️ Edit Data",
+    "summary": "📊 Summary"
+}
+for key, label in nav_items.items():
+    if st.sidebar.button(label):
+        st.session_state.page = key
+
+st.sidebar.markdown("---")
+if st.sidebar.button("🔒 Logout"):
+    st.session_state.logged_in = False
+    st.session_state.page = 'login'
+    st.experimental_rerun()
+
+st.sidebar.markdown(f"<span style='color: {dark_mode_toggle_color}'>🔒 Current Role: {st.session_state.role}</span>", unsafe_allow_html=True)
+st.session_state.dark_mode = st.sidebar.toggle("🌗 Enable Dark Mode", value=st.session_state.dark_mode)
+
 # --- Load Data ---
 def load_data():
     files = [f for f in os.listdir("data") if f.endswith(".xlsx")]
@@ -140,8 +148,20 @@ if st.session_state.logged_in:
 if "page" not in st.session_state:
     st.session_state.page = "home"
 
+st.markdown("""
+    <div style="text-align: center;">
+        <img src="https://raw.githubusercontent.com/iprobsu/IPRO/main/ipro_logo.png" alt="IPRO Logo" width="80" style="filter: drop-shadow(0 0 10px #00ffaa); animation: bounce 2s infinite;" />
+        <h1>📚 IP Masterlist Dashboard</h1>
+    </div>
+    <style>
+        @keyframes bounce {
+            0%, 100% { transform: translateY(0); }
+            50% { transform: translateY(-10px); }
+        }
+    </style>
+""", unsafe_allow_html=True)
+
 if st.session_state.page == "home":
-    st.markdown("# 🏠 IP Masterlist Dashboard")
     search_term = st.text_input("🔍 Search by Author or Title", value="")
     ip_type = st.selectbox("Filter by IP Type", ['All'] + sorted(df['IP Type'].dropna().unique().tolist()))
     year = st.selectbox("Filter by Year", ['All'] + sorted(df['Year'].dropna().unique().tolist()))
