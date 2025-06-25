@@ -12,6 +12,20 @@ if "page" not in st.session_state:
 if "logged_in" not in st.session_state:
     st.session_state.logged_in = False
 
+# --- Login Page ---
+if not st.session_state.logged_in:
+    st.title("🔐 IPRO Dashboard Login")
+    username = st.text_input("Username")
+    password = st.text_input("Password", type="password")
+    if st.button("Login"):
+        if username == "admin" and password == "admin123":
+            st.session_state.logged_in = True
+            st.session_state.page = "dashboard"
+            st.rerun()
+        else:
+            st.error("Invalid credentials")
+    st.stop()
+
 # --- Load Data ---
 def load_data():
     files = [f for f in os.listdir("data") if f.endswith(".xlsx")]
@@ -70,20 +84,6 @@ if st.session_state.logged_in:
 
 page = st.query_params.get("page", st.session_state.page)
 st.session_state.page = page
-
-# --- Login Page ---
-if not st.session_state.logged_in:
-    st.title("🔐 IPRO Dashboard Login")
-    username = st.text_input("Username")
-    password = st.text_input("Password", type="password")
-    if st.button("Login"):
-        if username == "admin" and password == "admin123":
-            st.session_state.logged_in = True
-            st.session_state.page = "dashboard"
-            st.rerun()
-        else:
-            st.error("Invalid credentials")
-    st.stop()
 
 # --- Dashboard Page ---
 if st.session_state.page == "dashboard":
