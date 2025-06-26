@@ -6,6 +6,47 @@ import altair as alt
 # --- Page Setup ---
 st.set_page_config(page_title="IP Masterlist Dashboard", layout="wide")
 
+# --- Custom Sidebar Toggle (Cute Heart 💖) ---
+st.markdown("""
+    <style>
+        [data-testid="collapsedControl"] {
+            display: none;
+        }
+
+        #custom-sidebar-toggle {
+            position: fixed;
+            top: 20px;
+            left: 15px;
+            z-index: 999;
+            background-color: #ff66b2;
+            color: white;
+            padding: 8px 12px;
+            border-radius: 50%;
+            font-size: 22px;
+            cursor: pointer;
+            box-shadow: 0 0 12px #ff66b2;
+        }
+
+        #custom-sidebar-toggle:hover {
+            background-color: #ff3399;
+        }
+    </style>
+
+    <script>
+        function toggleSidebar() {
+            const sidebar = window.parent.document.querySelector('[data-testid="stSidebar"]');
+            if (sidebar.style.transform === 'translateX(-100%)') {
+                sidebar.style.transform = 'translateX(0%)';
+            } else {
+                sidebar.style.transform = 'translateX(-100%)';
+            }
+        }
+    </script>
+
+    <div id="custom-sidebar-toggle" onclick="toggleSidebar()">💖</div>
+""", unsafe_allow_html=True)
+
+
 # --- Session State Setup ---
 if "logged_in" not in st.session_state:
     st.session_state.logged_in = False
@@ -170,10 +211,40 @@ st.markdown("""
 
 # --- Page Routing ---
 if st.session_state.page == "home":
-    st.write("Welcome to the home dashboard! (Home content placeholder)")
+    st.subheader("🏠 Home")
+    st.markdown("""
+    Welcome to the **IP Masterlist Dashboard**.  
+    Use the sidebar to navigate through the tools available:
+    - ✏️ Edit existing data
+    - 📊 View summary statistics
+    - 🔐 Log in as admin or moderator to manage access
+    """)
 
 elif st.session_state.page == "edit":
-    st.write("Edit your data here. (Edit page placeholder)")
+    st.subheader("✏️ Edit Data")
+    if st.session_state.role == "Admin":
+        st.markdown("You can edit the data below. Changes are not saved yet.")
+
+        edited_df = st.data_editor(df, use_container_width=True, num_rows="dynamic")
+        st.session_state.edited_df = edited_df
+
+        if st.button("💾 Save Changes (Coming Soon)"):
+            st.warning("Saving not yet implemented.")
+    else:
+        st.warning("You must be an Admin to edit data.")
 
 elif st.session_state.page == "summary":
-    st.write("Summary statistics page. (Summary page placeholder)")
+    st.subheader("📊 Summary")
+    summary = df.groupby("IP Type").size().reset_index(name="Count")
+
+    chart = alt.Chart(summary).mark_bar().encode(
+        x=alt.X('IP Type:N', title="IP Type"),
+        y=alt.Y('Count:Q', title="Number of Records"),
+        tooltip=['IP Type', 'Count']
+    ).properties(
+        width=600,
+        height=400
+    )
+
+    st.altair_chart(chart, use_container_width=True)
+
