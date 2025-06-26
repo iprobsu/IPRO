@@ -6,13 +6,12 @@ import altair as alt
 # --- Page Setup ---
 st.set_page_config(page_title="IP Masterlist Dashboard", layout="wide")
 
-# --- Custom Sidebar Toggle (Cute Heart 💖) ---
+# --- 💖 Sidebar Toggle Hack ---
 st.markdown("""
     <style>
         [data-testid="collapsedControl"] {
             display: none;
         }
-
         #custom-sidebar-toggle {
             position: fixed;
             top: 20px;
@@ -26,12 +25,10 @@ st.markdown("""
             cursor: pointer;
             box-shadow: 0 0 12px #ff66b2;
         }
-
         #custom-sidebar-toggle:hover {
             background-color: #ff3399;
         }
     </style>
-
     <script>
         function toggleSidebar() {
             const sidebar = window.parent.document.querySelector('[data-testid="stSidebar"]');
@@ -42,10 +39,8 @@ st.markdown("""
             }
         }
     </script>
-
     <div id="custom-sidebar-toggle" onclick="toggleSidebar()">💖</div>
 """, unsafe_allow_html=True)
-
 
 # --- Session State Setup ---
 if "logged_in" not in st.session_state:
@@ -67,7 +62,6 @@ if st.session_state.dark_mode:
             html, body {
                 background-color: #202124 !important;
                 color: #e8eaed !important;
-                font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
             }
             [class*="block-container"], [data-testid="stSidebar"] {
                 background-color: #202124 !important;
@@ -80,18 +74,12 @@ if st.session_state.dark_mode:
             label, .stTextInput label, .stSelectbox label, .stDateInput label, .stMultiSelect label {
                 color: #e8eaed !important;
             }
-            .st-bb, .st-bc, .stMarkdown, .stMarkdown p, .stText, .stTextInput, .stSelectbox, .stDateInput, .css-1v0mbdj, .stMultiSelect {
+            .st-bb, .st-bc, .stMarkdown, .stText, .stTextInput, .stSelectbox, .stDateInput, .stMultiSelect {
                 color: #e8eaed !important;
             }
-            .css-1aumxhk, .css-1v3fvcr, .css-ffhzg2, .stDataFrameContainer, .stDataEditorContainer {
+            .stDataFrameContainer, .stDataEditorContainer {
                 background-color: #202124 !important;
                 color: #e8eaed !important;
-            }
-            .stCheckbox > label {
-                color: #e8eaed !important;
-            }
-            .stSelectbox > div[data-baseweb="select"] > div {
-                background-color: #303134 !important;
             }
             .stButton > button {
                 background-color: #5f6368;
@@ -103,9 +91,10 @@ if st.session_state.dark_mode:
 # --- Login Page ---
 if not st.session_state.logged_in:
     st.markdown("""
-        <div style="max-width: 400px; margin: 100px auto; padding: 20px; text-align: center; background: transparent;">
-            <img src="https://raw.githubusercontent.com/iprobsu/IPRO/main/ipro_logo.png" alt="IPRO Logo" width="80" style="filter: drop-shadow(0 0 10px #00ffaa); animation: bounce 2s infinite; margin-bottom: 20px;" />
-            <h2 style="color: inherit;">🔐 IPRO Dashboard Login</h2>
+        <div style="max-width: 400px; margin: 100px auto; padding: 20px; text-align: center;">
+            <img src="https://raw.githubusercontent.com/iprobsu/IPRO/main/ipro_logo.png" width="80"
+                 style="filter: drop-shadow(0 0 10px #00ffaa); animation: bounce 2s infinite;" />
+            <h2>🔐 IPRO Dashboard Login</h2>
         </div>
         <style>
             @keyframes bounce {
@@ -133,7 +122,7 @@ if not st.session_state.logged_in:
                 st.error("❌ Invalid username or password")
     st.stop()
 
-# --- Sidebar Navigation (Permanent) ---
+# --- Sidebar Navigation ---
 st.sidebar.image("https://raw.githubusercontent.com/iprobsu/IPRO/main/ipro_logo.png", width=80)
 st.sidebar.markdown("<h2 style='text-align: center;'>📚 IPRO Cloud</h2>", unsafe_allow_html=True)
 
@@ -166,7 +155,7 @@ for key, label in nav_items.items():
 st.sidebar.markdown("---")
 if st.sidebar.button("🔒 Logout"):
     st.session_state.logged_in = False
-    st.session_state.page = 'login'
+    st.session_state.page = "login"
     st.experimental_rerun()
 
 st.sidebar.markdown(f"<span style='color: {dark_mode_toggle_color}'>🔒 Current Role: {st.session_state.role}</span>", unsafe_allow_html=True)
@@ -192,13 +181,13 @@ def load_data():
         df = df.explode('Author').reset_index(drop=True)
     return df
 
-if st.session_state.logged_in:
-    df = load_data()
+df = load_data()
 
-# --- Animated Logo & Title in Center ---
+# --- Logo & Title ---
 st.markdown("""
     <div style="text-align: center;">
-        <img src="https://raw.githubusercontent.com/iprobsu/IPRO/main/ipro_logo.png" alt="IPRO Logo" width="80" style="filter: drop-shadow(0 0 10px #00ffaa); animation: bounce 2s infinite;" />
+        <img src="https://raw.githubusercontent.com/iprobsu/IPRO/main/ipro_logo.png" width="80"
+             style="filter: drop-shadow(0 0 10px #00ffaa); animation: bounce 2s infinite;" />
         <h1>📚 IP Masterlist Dashboard</h1>
     </div>
     <style>
@@ -209,27 +198,25 @@ st.markdown("""
     </style>
 """, unsafe_allow_html=True)
 
-# --- Page Routing ---
+# --- PAGE ROUTING ---
 if st.session_state.page == "home":
     st.subheader("🏠 Home")
     st.markdown("""
     Welcome to the **IP Masterlist Dashboard**.  
-    Use the sidebar to navigate through the tools available:
-    - ✏️ Edit existing data
-    - 📊 View summary statistics
-    - 🔐 Log in as admin or moderator to manage access
+    Use the sidebar to:
+    - ✏️ Edit existing IP records
+    - 📊 View statistics
+    - 🔐 Manage admin and moderator access
     """)
 
 elif st.session_state.page == "edit":
     st.subheader("✏️ Edit Data")
     if st.session_state.role == "Admin":
-        st.markdown("You can edit the data below. Changes are not saved yet.")
-
+        st.markdown("You can edit the table below:")
         edited_df = st.data_editor(df, use_container_width=True, num_rows="dynamic")
         st.session_state.edited_df = edited_df
-
-        if st.button("💾 Save Changes (Coming Soon)"):
-            st.warning("Saving not yet implemented.")
+        if st.button("💾 Save Changes (not functional yet)"):
+            st.warning("Saving is not implemented yet.")
     else:
         st.warning("You must be an Admin to edit data.")
 
@@ -241,10 +228,6 @@ elif st.session_state.page == "summary":
         x=alt.X('IP Type:N', title="IP Type"),
         y=alt.Y('Count:Q', title="Number of Records"),
         tooltip=['IP Type', 'Count']
-    ).properties(
-        width=600,
-        height=400
-    )
+    ).properties(width=600, height=400)
 
     st.altair_chart(chart, use_container_width=True)
-
