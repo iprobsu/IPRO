@@ -32,7 +32,6 @@ def save_data(df):
 
 # --- UI Setup ---
 st.set_page_config("📚 IPRO Dashboard", layout="wide")
-st.title("📚 IP Masterlist (Live Google Sheet)")
 
 # --- Login (Hardcoded for now) ---
 if "role" not in st.session_state:
@@ -52,30 +51,48 @@ if not st.session_state.role:
                 st.error("Invalid login")
     st.stop()
 
-# --- Load and Show Data ---
-df = load_data()
-st.dataframe(df, use_container_width=True)
+# --- Navigation ---
+if "page" not in st.session_state:
+    st.session_state.page = "home"
 
-# --- Admin Controls ---
-if st.session_state.role == "Admin":
-    st.markdown("### ✏️ Edit Table")
-    edited_df = st.data_editor(df, num_rows="dynamic", use_container_width=True)
-
-    if st.button("💾 Save Changes"):
-        save_data(edited_df)
-        st.success("Saved to Google Sheets!")
-        st.experimental_rerun()
-
-    if st.button("➕ Add New Column"):
-        new_col = st.text_input("Enter new column name:", key="new_col")
-        if new_col:
-            df[new_col] = ""
-            save_data(df)
-            st.success(f"Column '{new_col}' added!")
-            st.experimental_rerun()
-
-st.markdown("---")
-st.markdown(f"🔐 Logged in as: **{st.session_state.role}**")
-if st.button("Logout"):
+st.sidebar.title("📚 IPRO Navigation")
+if st.sidebar.button("🏠 Home (Dashboard)"):
+    st.session_state.page = "home"
+if st.sidebar.button("✏️ Edit Data"):
+    st.session_state.page = "edit"
+if st.sidebar.button("🔒 Logout"):
     st.session_state.role = None
     st.experimental_rerun()
+
+# --- Load Data ---
+df = load_data()
+
+# --- Home Page ---
+if st.session_state.page == "home":
+    st.title("📚 IP Masterlist Dashboard")
+    st.dataframe(df, use_container_width=True)
+
+# --- Edit Page ---
+elif st.session_state.page == "edit":
+    if st.session_state.role == "Admin":
+        st.title("✏️ Edit Data")
+        edited_df = st.data_editor(df, num_rows="dynamic", use_container_width=True)
+
+        if st.button("💾 Save Changes"):
+            save_data(edited_df)
+            st.success("Saved to Google Sheets!")
+            st.experimental_rerun()
+
+        if st.button("➕ Add New Column"):
+            new_col = st.text_input("Enter new column name:", key="new_col")
+            if new_col:
+                df[new_col] = ""
+                save_data(df)
+                st.success(f"Column '{new_col}' added!")
+                st.experimental_rerun()
+    else:
+        st.warning("You must be an Admin to edit data.")
+
+# --- Footer ---
+st.markdown("---")
+st.markdown(f"🔐 Logged in as: **{st.session_state.role}**")
