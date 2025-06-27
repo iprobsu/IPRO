@@ -2,7 +2,7 @@
 import streamlit as st
 import pandas as pd
 import gspread
-import os
+import json
 from google.oauth2.service_account import Credentials
 
 # --- Google Sheets Setup ---
@@ -10,14 +10,7 @@ SHEET_ID = "1ACa5R51PWp0Et3cjJZQNyY9hZaIVSVF3k_EqTRoTuj8"
 SHEET_NAME = "Sheet1"
 SCOPES = ["https://www.googleapis.com/auth/spreadsheets"]
 
-# ✅ Load credentials from uploaded key file (supports Streamlit sharing)
-json_key_path = "ipro-project-464106-723ea01341f2.json"
-if not os.path.exists(json_key_path):
-    st.error(f"Service account file not found: {json_key_path}")
-    st.stop()
-
-import json
-
+# ✅ Upload credentials via sidebar
 with st.sidebar.expander("🔑 Upload Service Account JSON"):
     uploaded_file = st.file_uploader("Upload service_account.json", type="json")
 
@@ -33,7 +26,6 @@ creds = Credentials.from_service_account_info(
 client = gspread.authorize(creds)
 worksheet = client.open_by_key(SHEET_ID).worksheet(SHEET_NAME)
 
-
 def load_data():
     df = pd.DataFrame(worksheet.get_all_records())
     if 'IP Type' in df.columns:
@@ -41,11 +33,9 @@ def load_data():
         df = df[cols]
     return df
 
-
 def save_data(df):
     worksheet.clear()
     worksheet.update([df.columns.tolist()] + df.values.tolist())
-
 
 # --- UI Setup ---
 st.set_page_config("📚 IPRO Dashboard", layout="wide")
@@ -93,21 +83,16 @@ if st.session_state.page == "home":
 elif st.session_state.page == "edit":
     if st.session_state.role == "Admin":
         st.title("✏️ Edit Data")
-        edited_df = st.data_editor(
-            df,
-            num_rows="dynamic",
-            use_container_width=True,
-            key="editable_table"
-        )
+        edited_df = st.data_editor(df, num_rows="dynamic", use_container_width=True)
 
         if st.button("💾 Save Changes"):
             save_data(edited_df)
             st.success("Saved to Google Sheets!")
             st.experimental_rerun()
 
-        with st.expander("➕ Add New Column"):
+        if st.button("➕ Add New Column"):
             new_col = st.text_input("Enter new column name:", key="new_col")
-            if new_col and new_col not in df.columns:
+            if new_col:
                 df[new_col] = ""
                 save_data(df)
                 st.success(f"Column '{new_col}' added!")
