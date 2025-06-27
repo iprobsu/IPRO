@@ -4,6 +4,7 @@ import pandas as pd
 import gspread
 import json
 from google.oauth2.service_account import Credentials
+from st_aggrid import AgGrid, GridOptionsBuilder, GridUpdateMode
 
 # --- Google Sheets Setup ---
 SHEET_ID = "1ACa5R51PWp0Et3cjJZQNyY9hZaIVSVF3k_EqTRoTuj8"
@@ -83,18 +84,34 @@ if st.session_state.page == "home":
 elif st.session_state.page == "edit":
     if st.session_state.role == "Admin":
         st.title("✏️ Edit Data")
-        edited_df = st.data_editor(df, num_rows="dynamic", use_container_width=True)
+
+        gb = GridOptionsBuilder.from_dataframe(df)
+        gb.configure_default_column(editable=True, resizable=True, filter=True)
+        gb.configure_grid_options(domLayout='normal')
+        grid_options = gb.build()
+
+        grid_response = AgGrid(
+            df,
+            gridOptions=grid_options,
+            update_mode=GridUpdateMode.MANUAL,
+            allow_unsafe_jscode=True,
+            fit_columns_on_grid_load=True,
+            enable_enterprise_modules=False,
+            height=500,
+        )
+
+        updated_df = grid_response["data"]
 
         if st.button("💾 Save Changes"):
-            save_data(edited_df)
+            save_data(updated_df)
             st.success("Saved to Google Sheets!")
             st.experimental_rerun()
 
-        if st.button("➕ Add New Column"):
-            new_col = st.text_input("Enter new column name:", key="new_col")
-            if new_col:
-                df[new_col] = ""
-                save_data(df)
+        with st.expander("➕ Add New Column"):
+            new_col = st.text_input("Enter new column name:")
+            if new_col and new_col not in updated_df.columns:
+                updated_df[new_col] = ""
+                save_data(updated_df)
                 st.success(f"Column '{new_col}' added!")
                 st.experimental_rerun()
     else:
