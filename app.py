@@ -16,8 +16,17 @@ if not os.path.exists(json_key_path):
     st.error(f"Service account file not found: {json_key_path}")
     st.stop()
 
-creds = Credentials.from_service_account_file(
-    json_key_path,
+import json
+
+with st.sidebar.expander("🔑 Upload Service Account JSON"):
+    uploaded_file = st.file_uploader("Upload service_account.json", type="json")
+
+if uploaded_file is None:
+    st.warning("Please upload your Google service account JSON to proceed.")
+    st.stop()
+
+creds = Credentials.from_service_account_info(
+    json.load(uploaded_file),
     scopes=SCOPES
 )
 
